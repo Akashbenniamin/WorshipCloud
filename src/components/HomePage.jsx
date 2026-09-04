@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BookOpen, 
   Music, 
@@ -379,14 +379,15 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       onMouseMove={handleContainerMouseMove}
       style={{
         width: '100%',
-        height: 'calc(100vh - 65px)',
-        maxHeight: 'calc(100vh - 65px)',
-        overflow: 'hidden',
+        height: '100%',
+        maxHeight: '100%',
+        overflowY: isMobile ? 'auto' : 'hidden',
+        overflowX: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '0 2rem',
+        padding: isMobile ? '0.75rem 0.75rem 1.5rem 0.75rem' : '0 2rem',
         boxSizing: 'border-box',
         position: 'relative'
       }}
