@@ -39,13 +39,13 @@ function PushPin({ color = '#ef4444', isHovered = false }) {
 }
 
 // 3D Parallax Interactive Card where Pin & Card share the exact transform
-function InteractiveCard({ card, onNavigate }) {
+function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = false }) {
   const cardRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 });
 
   const handleMouseMove = (e) => {
-    if (!cardRef.current) return;
+    if (isMobile || !cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left - rect.width / 2;
     const y = e.clientY - rect.top - rect.height / 2;
@@ -56,15 +56,19 @@ function InteractiveCard({ card, onNavigate }) {
     setTilt({ x: rotateX, y: rotateY, glareX, glareY });
   };
 
-  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseEnter = () => { if (!isMobile) setIsHovered(true); };
   const handleMouseLeave = () => {
-    setIsHovered(false);
-    setTilt({ x: 0, y: 0, glareX: 50, glareY: 50 });
+    if (!isMobile) {
+      setIsHovered(false);
+      setTilt({ x: 0, y: 0, glareX: 50, glareY: 50 });
+    }
   };
 
-  const combinedTransform = isHovered
-    ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateY(-16px) scale3d(1.06, 1.06, 1.06)`
-    : `rotate(${card.tilt}) translateY(${card.offsetY})`;
+  const combinedTransform = isMobile
+    ? 'none'
+    : isHovered
+      ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateY(-16px) scale3d(1.06, 1.06, 1.06)`
+      : `rotate(${card.tilt}) translateY(${card.offsetY})`;
 
   const CardIcon = card.icon;
 
@@ -76,9 +80,10 @@ function InteractiveCard({ card, onNavigate }) {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
-        flex: 1,
-        minWidth: '175px',
-        maxWidth: '225px',
+        flex: isMobile ? undefined : 1,
+        gridColumn: isMobile && isLastCard ? 'span 2' : undefined,
+        minWidth: isMobile ? '0' : '175px',
+        maxWidth: isMobile ? 'none' : '225px',
         position: 'relative',
         transform: combinedTransform,
         transition: isHovered 
@@ -96,12 +101,12 @@ function InteractiveCard({ card, onNavigate }) {
       <div
         style={{
           width: '100%',
-          minHeight: '215px',
-          maxHeight: '245px',
+          minHeight: isMobile ? '78px' : '215px',
+          maxHeight: isMobile ? '90px' : '245px',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
-          borderRadius: '12px',
-          padding: '1.4rem 1.1rem 1.15rem 1.1rem',
+          borderRadius: isMobile ? '10px' : '12px',
+          padding: isMobile ? '0.55rem 0.75rem 0.45rem 0.75rem' : '1.4rem 1.1rem 1.15rem 1.1rem',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -148,43 +153,81 @@ function InteractiveCard({ card, onNavigate }) {
         </div>
 
         {/* REPLACED BOX THING: SLEEK SUITABLE ICON IN TOP-LEFT */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '30px',
-          height: '30px',
-          borderRadius: '8px',
-          backgroundColor: card.accentBg,
-          color: card.numColor,
-          marginBottom: '0.75rem',
-          zIndex: 4,
-          border: '1px solid var(--border-subtle)'
-        }}>
-          <CardIcon size={16} strokeWidth={2.4} />
-        </div>
+        {isMobile ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', zIndex: 4 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '22px',
+              height: '22px',
+              borderRadius: '6px',
+              backgroundColor: card.accentBg,
+              color: card.numColor,
+              border: '1px solid var(--border-subtle)',
+              flexShrink: 0
+            }}>
+              <CardIcon size={12} strokeWidth={2.4} />
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--font-okine)',
+              fontSize: '0.90rem',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              margin: 0,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {card.title}
+            </h2>
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '30px',
+            height: '30px',
+            borderRadius: '8px',
+            backgroundColor: card.accentBg,
+            color: card.numColor,
+            marginBottom: '0.75rem',
+            zIndex: 4,
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <CardIcon size={16} strokeWidth={2.4} />
+          </div>
+        )}
 
         {/* Main Text as Center Attraction */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 4 }}>
-          <h2 style={{
-            fontFamily: 'var(--font-okine)',
-            fontSize: 'clamp(1.35rem, 1.8vw, 1.65rem)',
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.15,
-            marginBottom: '0.45rem'
-          }}>
-            {card.title}
-          </h2>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 4, marginTop: isMobile ? '2px' : undefined }}>
+          {!isMobile && (
+            <h2 style={{
+              fontFamily: 'var(--font-okine)',
+              fontSize: 'clamp(1.35rem, 1.8vw, 1.65rem)',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.15,
+              marginBottom: '0.45rem'
+            }}>
+              {card.title}
+            </h2>
+          )}
 
           {/* Very Short Description */}
           <p style={{
-            fontSize: '0.78rem',
+            fontSize: isMobile ? '0.68rem' : '0.78rem',
             color: 'var(--text-secondary)',
-            lineHeight: 1.35,
+            lineHeight: 1.25,
             margin: 0,
-            fontWeight: 500
+            fontWeight: 500,
+            whiteSpace: isMobile ? 'nowrap' : undefined,
+            overflow: isMobile ? 'hidden' : undefined,
+            textOverflow: isMobile ? 'ellipsis' : undefined
           }}>
             {card.desc}
           </p>
@@ -192,12 +235,12 @@ function InteractiveCard({ card, onNavigate }) {
 
         {/* Bottom Accent Line */}
         <div style={{
-          height: '3px',
-          width: '28px',
+          height: isMobile ? '2px' : '3px',
+          width: isMobile ? '20px' : '28px',
           backgroundColor: card.pinColor,
           borderRadius: '2px',
           opacity: 0.7,
-          marginTop: '0.75rem',
+          marginTop: isMobile ? '2px' : '0.75rem',
           zIndex: 4
         }} />
       </div>
@@ -208,6 +251,13 @@ function InteractiveCard({ card, onNavigate }) {
 export function HomePage({ onNavigate, uiLang = 'ta' }) {
   const containerRef = useRef(null);
   const [mousePos, setMousePos] = useState({ x: 600, y: 350 });
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleContainerMouseMove = (e) => {
     if (!containerRef.current) return;
@@ -472,19 +522,20 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       {/* 3. HERO SECTION (TALINA FONT FOR HERO TITLE, REDUCED JOHN 8:32 MOTTO) */}
       <div style={{
         textAlign: 'center',
-        marginBottom: '2.5rem',
+        marginBottom: isMobile ? '0.65rem' : '2.5rem',
+        marginTop: isMobile ? '0.15rem' : undefined,
         zIndex: 15,
         animation: 'fadeIn 0.25s ease-out'
       }}>
         {/* HERO TITLE IN TALINA FONT */}
         <h1 style={{
           fontFamily: 'Talina, var(--font-talina), Georgia, serif',
-          fontSize: 'clamp(3.6rem, 6.8vw, 5.4rem)',
+          fontSize: isMobile ? 'clamp(2.1rem, 7.5vw, 2.7rem)' : 'clamp(3.6rem, 6.8vw, 5.4rem)',
           fontWeight: 400,
           color: 'var(--text-primary)',
           letterSpacing: '0.02em',
           lineHeight: 1.05,
-          marginBottom: '0.45rem',
+          marginBottom: isMobile ? '0.2rem' : '0.45rem',
           textShadow: '0 2px 14px rgba(0,0,0,0.04)'
         }}>
           Worship Cloud
@@ -495,11 +546,11 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
           fontFamily: 'var(--font-malibu)',
           fontStyle: 'italic',
           color: 'var(--text-secondary)',
-          fontSize: '0.78rem',
+          fontSize: isMobile ? '0.68rem' : '0.78rem',
           letterSpacing: '0.04em',
           maxWidth: '650px',
           margin: '0 auto',
-          lineHeight: 1.35,
+          lineHeight: 1.25,
           opacity: 0.7
         }}>
           {uiLang === 'ta' 
@@ -512,54 +563,59 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       <div style={{
         position: 'relative',
         width: '100%',
-        maxWidth: '1240px',
+        maxWidth: isMobile ? '390px' : '1240px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 10
       }}>
-        {/* Subtle Curved Dotted Connecting Path */}
-        <svg
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '3%',
-            width: '94%',
-            height: '120px',
-            transform: 'translateY(-50%)',
-            zIndex: 2,
-            pointerEvents: 'none',
-            overflow: 'visible',
-            opacity: 0.35
-          }}
-          viewBox="0 0 1000 120"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M 50 40 Q 250 110, 500 50 T 950 60"
-            stroke="var(--border-strong)"
-            strokeWidth="2"
-            strokeDasharray="6 6"
-          />
-        </svg>
+        {/* Subtle Curved Dotted Connecting Path on Desktop only */}
+        {!isMobile && (
+          <svg
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '3%',
+              width: '94%',
+              height: '120px',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+              pointerEvents: 'none',
+              overflow: 'visible',
+              opacity: 0.35
+            }}
+            viewBox="0 0 1000 120"
+            fill="none"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M 50 40 Q 250 110, 500 50 T 950 60"
+              stroke="var(--border-strong)"
+              strokeWidth="2"
+              strokeDasharray="6 6"
+            />
+          </svg>
+        )}
 
-        {/* CARDS ROW (RESTING IN THE MIDDLE WITH PERFECT PIN ALIGNMENT) */}
+        {/* CARDS ROW (DESKTOP: ROW OF 5; MOBILE: 2 COLS X 3 ROWS VERTICAL GRID FIT IN 100%) */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'row',
+          display: isMobile ? 'grid' : 'flex',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : undefined,
+          flexDirection: isMobile ? undefined : 'row',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '1.25rem',
+          gap: isMobile ? '0.55rem' : '1.25rem',
           width: '100%',
           zIndex: 10,
-          padding: '1.5rem 0'
+          padding: isMobile ? '0.25rem 0' : '1.5rem 0'
         }}>
-          {cards.map((card) => (
+          {cards.map((card, idx) => (
             <InteractiveCard
               key={card.id}
               card={card}
               onNavigate={onNavigate}
+              isMobile={isMobile}
+              isLastCard={idx === cards.length - 1}
             />
           ))}
         </div>

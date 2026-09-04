@@ -2,6 +2,18 @@
 
 @font-face {
   font-family: 'Okine';
+  src: url('/fonts/MADEOkineSansPERSONALUSE-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'OkineBlack';
+  src: url('/fonts/MADEOkineSansPERSONALUSE-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Okine';
   src: url('/fonts/MADEOkineSansPERSONALUSE-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;

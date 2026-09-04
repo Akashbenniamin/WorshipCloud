@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Clock as ClockIcon } from 'lucide-react';
 
 export function ChurchClockView({
-  serviceTitle,
   format24h = false,
   showSeconds = true,
   _theme = 'midnight-gold',
-  bgType = 'texture',
-  textureSrc = './images/card-backgrounds/clouds-golden.jpg',
-  bgOverlayOpacity = 0.70,
+  bgType = 'gradient',
+  gradientBg = 'radial-gradient(ellipse at center, #1e1b4b 0%, #0f172a 45%, #020617 100%)',
   bgColor = '#090d16',
+  animatedBg = true,
   isMini = false,
   uiLang = 'ta'
 }) {
@@ -50,146 +48,138 @@ export function ChurchClockView({
     ? `${dayName}, ${monthName} ${dateNum}, ${yearNum}`
     : `${dayName}, ${dateNum} ${monthName} ${yearNum}`;
 
-  const defaultTitle = isEn 
-    ? 'Sanctuary Worship Time' 
-    : 'ஆலய ஆராதனை நேரம்';
-
   return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-      backgroundColor: bgColor,
-      color: '#ffffff',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      fontFamily: "'Noto Sans Tamil', 'Inter', sans-serif",
-      userSelect: 'none',
-      boxSizing: 'border-box',
-      padding: isMini ? '12px' : '2.5rem'
-    }}>
-      {/* Texture Background Layer */}
-      {bgType === 'texture' && textureSrc && (
-        <>
-          <img
-            src={textureSrc}
-            alt=""
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              zIndex: 0,
-              pointerEvents: 'none'
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: `rgba(0, 0, 0, ${bgOverlayOpacity})`,
-              zIndex: 1,
-              pointerEvents: 'none'
-            }}
-          />
-        </>
-      )}
-
-      {/* Main Clock Card Container */}
-      <div style={{
+    <div
+      style={{
         position: 'relative',
-        zIndex: 4,
+        width: '100%',
+        height: '100%',
+        backgroundColor: bgColor,
+        background: bgType === 'gradient' ? gradientBg : bgColor,
+        color: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        textAlign: 'center',
-        width: '100%',
-        maxWidth: isMini ? '100%' : '1100px'
-      }}>
-        {/* Service Header Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: isMini ? '3px 10px' : '6px 22px',
-          borderRadius: '999px',
-          backgroundColor: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255, 215, 0, 0.35)',
-          backdropFilter: 'blur(10px)',
-          color: '#fde047',
-          fontSize: isMini ? '0.7rem' : 'clamp(0.95rem, 1.8vw, 1.35rem)',
-          fontWeight: 750,
-          letterSpacing: '0.04em',
-          marginBottom: isMini ? '6px' : '18px'
-        }}>
-          <ClockIcon size={isMini ? 12 : 18} />
-          <span>{serviceTitle || defaultTitle}</span>
-        </div>
+        overflow: 'hidden',
+        fontFamily: "'Noto Sans Tamil', 'Inter', sans-serif",
+        userSelect: 'none',
+        boxSizing: 'border-box',
+        padding: isMini ? '12px' : '2rem'
+      }}
+    >
+      {/* Optional Ambient Subtle Shimmer Wave */}
+      {animatedBg && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: '-50%',
+            width: '200%',
+            height: '200%',
+            background: 'radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.08) 0%, rgba(56, 189, 248, 0.04) 35%, transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 1,
+            animation: 'rotateClockBg 28s linear infinite'
+          }}
+        />
+      )}
 
-        {/* Large Digital Clock Dial Container */}
-        <div style={{
-          backgroundColor: 'rgba(15, 23, 42, 0.72)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: isMini ? '10px' : '24px',
-          border: '1.5px solid rgba(245, 158, 11, 0.4)',
-          padding: isMini ? '10px 14px' : 'clamp(20px, 3.5vw, 42px) clamp(24px, 5vw, 64px)',
-          boxShadow: '0 16px 44px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(245, 158, 11, 0.08)',
+      {/* Main Clock Dial Container */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 4,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
+          justifyContent: 'center',
+          textAlign: 'center',
+          width: '100%',
+          maxWidth: isMini ? '100%' : '1200px'
+        }}
+      >
+        {/* Massive Aesthetic Digital Clock Dial */}
+        <div
+          style={{
+            backgroundColor: 'rgba(15, 23, 42, 0.72)',
+            backdropFilter: 'blur(24px)',
+            borderRadius: isMini ? '12px' : '28px',
+            border: '1.5px solid rgba(245, 158, 11, 0.45)',
+            padding: isMini ? '12px 16px' : 'clamp(28px, 4.5vw, 56px) clamp(28px, 6vw, 76px)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 32px rgba(245, 158, 11, 0.1)',
             display: 'flex',
-            alignItems: 'baseline',
+            flexDirection: 'column',
+            alignItems: 'center',
             justifyContent: 'center',
-            gap: isMini ? '2px' : 'clamp(4px, 1vw, 12px)',
-            fontFamily: "'Outfit', 'Inter', monospace",
-            fontWeight: 900,
-            lineHeight: 1,
-            color: '#ffffff',
-            textShadow: '0 0 28px rgba(245, 158, 11, 0.55), 0 4px 14px rgba(0,0,0,0.9)'
-          }}>
+            position: 'relative'
+          }}
+        >
+          {/* Subtle Top Rim Sheen */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '15%',
+              right: '15%',
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent, rgba(254, 240, 138, 0.75), transparent)'
+            }}
+          />
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'center',
+              gap: isMini ? '2px' : 'clamp(6px, 1.2vw, 16px)',
+              fontFamily: "'Outfit', 'Inter', monospace",
+              fontWeight: 900,
+              lineHeight: 1,
+              color: '#ffffff',
+              textShadow: '0 0 35px rgba(245, 158, 11, 0.65), 0 6px 18px rgba(0,0,0,0.95)'
+            }}
+          >
             {/* Hours */}
-            <span style={{ fontSize: isMini ? 'clamp(2rem, 7vw, 3.2rem)' : 'clamp(4.2rem, 10vw, 8.5rem)' }}>
+            <span style={{ fontSize: isMini ? 'clamp(2.6rem, 8.5vw, 3.8rem)' : 'clamp(5.5rem, 13vw, 11.5rem)' }}>
               {hoursStr}
             </span>
 
             {/* Pulsing Colon */}
-            <span style={{
-              fontSize: isMini ? 'clamp(1.8rem, 6.5vw, 3rem)' : 'clamp(3.8rem, 9.5vw, 8rem)',
-              color: '#fde047',
-              margin: '0 2px',
-              animation: 'pulseGlow 1s infinite'
-            }}>
+            <span
+              style={{
+                fontSize: isMini ? 'clamp(2.2rem, 7.5vw, 3.4rem)' : 'clamp(5rem, 12vw, 10.5rem)',
+                color: '#fde047',
+                margin: '0 2px',
+                animation: 'pulseGlow 1s infinite'
+              }}
+            >
               :
             </span>
 
             {/* Minutes */}
-            <span style={{ fontSize: isMini ? 'clamp(2rem, 7vw, 3.2rem)' : 'clamp(4.2rem, 10vw, 8.5rem)' }}>
+            <span style={{ fontSize: isMini ? 'clamp(2.6rem, 8.5vw, 3.8rem)' : 'clamp(5.5rem, 13vw, 11.5rem)' }}>
               {minutesStr}
             </span>
 
             {/* Seconds (Optional) */}
             {showSeconds && (
               <>
-                <span style={{
-                  fontSize: isMini ? 'clamp(1.8rem, 6.5vw, 3rem)' : 'clamp(3.8rem, 9.5vw, 8rem)',
-                  color: '#fde047',
-                  margin: '0 2px',
-                  animation: 'pulseGlow 1s infinite'
-                }}>
+                <span
+                  style={{
+                    fontSize: isMini ? 'clamp(2.2rem, 7.5vw, 3.4rem)' : 'clamp(5rem, 12vw, 10.5rem)',
+                    color: '#fde047',
+                    margin: '0 2px',
+                    animation: 'pulseGlow 1s infinite'
+                  }}
+                >
                   :
                 </span>
-                <span style={{
-                  fontSize: isMini ? 'clamp(1.6rem, 5.5vw, 2.6rem)' : 'clamp(3.4rem, 8vw, 6.8rem)',
-                  color: 'rgba(255, 255, 255, 0.88)'
-                }}>
+                <span
+                  style={{
+                    fontSize: isMini ? 'clamp(2.2rem, 7vw, 3.2rem)' : 'clamp(4.5rem, 10.5vw, 9rem)',
+                    color: 'rgba(255, 255, 255, 0.88)'
+                  }}
+                >
                   {secondsStr}
                 </span>
               </>
@@ -197,32 +187,39 @@ export function ChurchClockView({
 
             {/* AM / PM Badge (Only when 12-hour mode) */}
             {!format24h && (
-              <span style={{
-                fontSize: isMini ? '0.68rem' : 'clamp(1rem, 2.2vw, 1.8rem)',
-                fontWeight: 850,
-                color: '#fde047',
-                backgroundColor: 'rgba(245, 158, 11, 0.22)',
-                border: '1.5px solid rgba(245, 158, 11, 0.5)',
-                borderRadius: isMini ? '4px' : '8px',
-                padding: isMini ? '2px 5px' : '4px 10px',
-                marginLeft: isMini ? '4px' : '14px',
-                alignSelf: 'center',
-                letterSpacing: '0.06em'
-              }}>
+              <span
+                style={{
+                  fontSize: isMini ? 'clamp(0.9rem, 2.5vw, 1.3rem)' : 'clamp(1.5rem, 3.2vw, 2.6rem)',
+                  fontWeight: 900,
+                  color: '#fde047',
+                  marginLeft: isMini ? '4px' : '14px',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  padding: isMini ? '2px 6px' : '4px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(245, 158, 11, 0.18)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)'
+                }}
+              >
                 {ampmStr}
               </span>
             )}
           </div>
 
-          {/* Full Localized Calendar Date */}
-          <div style={{
-            marginTop: isMini ? '6px' : '18px',
-            fontSize: isMini ? '0.72rem' : 'clamp(1.1rem, 2.2vw, 1.75rem)',
-            fontWeight: 750,
-            color: '#fef3c7',
-            letterSpacing: '0.04em',
-            textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)'
-          }}>
+          {/* Localized Date Card inside the Clock Dial */}
+          <div
+            style={{
+              marginTop: isMini ? '8px' : '22px',
+              padding: isMini ? '4px 12px' : '8px 24px',
+              borderRadius: '999px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#cbd5e1',
+              fontSize: isMini ? '0.74rem' : 'clamp(1rem, 1.8vw, 1.45rem)',
+              fontWeight: 650,
+              letterSpacing: '0.03em'
+            }}
+          >
             {formattedDate}
           </div>
         </div>

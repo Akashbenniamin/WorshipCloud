@@ -135,10 +135,28 @@ export const translations = {
     supabaseConfigSubtitle: 'உங்கள் இலவச Supabase திட்டத்தின் URL மற்றும் Anon Key-ஐ இங்கே உள்ளிடவும்',
     supabaseUrl: 'Supabase Project URL',
     supabaseAnonKey: 'Supabase Anon Key',
-    saveAndConnect: 'சேமித்து இணைக்க',
     connected: 'இணைக்கப்பட்டுள்ளது',
     notConnected: 'இணைக்கப்படவில்லை',
-    freeTierNotice: 'Supabase மற்றும் Google Login முற்றிலும் 100% இலவசம்!'
+
+    // Custom Songs Management
+    mySongs: 'என் பாடல்கள்',
+    addSong: 'பாடல் சேர்க்க',
+    addNewSong: 'புதிய பாடல் சேர்க்க',
+    editSong: 'திருத்து',
+    deleteSong: 'நீக்கு',
+    confirmDeleteSong: 'இந்தப் பாடலை நீக்க வேண்டுமா?',
+    lyricsPlaceholder: 'பாடல் வரிகளை இங்கே ஒட்டவும் அல்லது தட்டச்சு செய்யவும்...',
+    tamilTitleLabel: 'தமிழ் தலைப்பு (முதல் வரியிலிருந்து தானாக எடுக்கப்பட்டது)',
+    tanglishTitleLabel: 'தங்லிஷ் தலைப்பு (Tanglish Title)',
+    tanglishPlaceholder: 'எ.கா. En Uyirana Yesuvae',
+    subtitleArtistLabel: 'ஆசிரியர் / குறிப்பு (விரும்பினால்)',
+    saveSong: 'பாடலைச் சேமிக்க',
+    savingSong: 'சேமிக்கப்படுகிறது...',
+    songSaved: 'பாடல் வெற்றிகரமாகச் சேமிக்கப்பட்டது!',
+    loginToSaveSong: 'பாடல்களைச் சேமிக்கவும் ஒத்திசைக்கவும் Google மூலம் உள்நுழையவும்',
+    closeProjectorWindow: '2வது திரை சாளரத்தை மூடுக',
+    fullscreenSlide: 'முழுத்திரை ஸ்லைடு',
+    slideCount: 'ஸ்லைடு'
   },
   en: {
     brandName: 'Worship Cloud',
@@ -276,9 +294,27 @@ export const translations = {
     supabaseConfigSubtitle: 'Enter your free Supabase project URL and anon public key',
     supabaseUrl: 'Supabase Project URL',
     supabaseAnonKey: 'Supabase Anon Key',
-    saveAndConnect: 'Save & Connect',
     connected: 'Connected',
     notConnected: 'Not Connected',
-    freeTierNotice: 'Supabase and Google Login are 100% Free!'
+
+    // Custom Songs Management
+    mySongs: 'My Songs',
+    addSong: 'Add Song',
+    addNewSong: 'Add New Song',
+    editSong: 'Edit',
+    deleteSong: 'Delete',
+    confirmDeleteSong: 'Are you sure you want to delete this song?',
+    lyricsPlaceholder: 'Paste or type song lyrics here...',
+    tamilTitleLabel: 'Tamil Title (Auto-detected from 1st line)',
+    tanglishTitleLabel: 'Tanglish Title',
+    tanglishPlaceholder: 'e.g. En Uyirana Yesuvae',
+    subtitleArtistLabel: 'Author / Subtitle (Optional)',
+    saveSong: 'Save Song',
+    savingSong: 'Saving...',
+    songSaved: 'Song saved successfully!',
+    loginToSaveSong: 'Please sign in with Google to save and sync custom songs',
+    closeProjectorWindow: 'Close 2nd Screen Window',
+    fullscreenSlide: 'Fullscreen Slide',
+    slideCount: 'Slide'
   }
 };

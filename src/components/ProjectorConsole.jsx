@@ -15,9 +15,11 @@ import {
   RotateCcw,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
   SlidersHorizontal,
   Trash2,
   Monitor,
+  MonitorOff,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -188,12 +190,35 @@ export function ProjectorConsole({
   booksMeta = [],
   songsIndex = [],
   projector,
-  uiLang = 'ta'
+  uiLang = 'ta',
+  userSongs = [],
+  onOpenAddSong,
+  onDeleteSong,
+  user,
+  onOpenAuth
 }) {
   const t = translations[uiLang] || translations.ta;
 
+  // Responsive mobile presenter state
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isFullscreenMobilePresenter, setIsFullscreenMobilePresenter] = useState(false);
+  const [mobileSongViewMode, setMobileSongViewMode] = useState('list'); // 'list' | 'stanzas'
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // 3-way Left Sidebar Mode: 'media' | 'bible' | 'songs'
   const [leftTab, setLeftTab] = useState('bible');
+
+  // Force non-media tab on mobile
+  useEffect(() => {
+    if (isMobile && leftTab === 'media') {
+      setLeftTab('bible');
+    }
+  }, [isMobile, leftTab]);
 
   // Media state
   const [mediaDocs, setMediaDocs] = useState(() => {
@@ -631,6 +656,20 @@ export function ProjectorConsole({
       return;
     }
 
+    if (selectedSongMeta.custom) {
+      const sections = splitSongSections(selectedSongMeta.lyrics);
+      const details = {
+        title: selectedSongMeta.title,
+        englishTitle: selectedSongMeta.englishTitle || '',
+        lyrics: selectedSongMeta.lyrics,
+        sections
+      };
+      setSongDetails(details);
+      loadSongSlides(selectedSongMeta, details, songStyle);
+      setLoadingSong(false);
+      return;
+    }
+
     let isCancelled = false;
     setLoadingSong(true);
 
@@ -883,8 +922,90 @@ export function ProjectorConsole({
   // Handle slide selection
   const handleSelectSlide = (slide) => {
     setSelectedSlideId(slide.id);
-    if (quickLive) {
+    if (quickLive || isMobile) {
       handleGoLive(slide);
+    }
+  };
+
+  // Mobile touch & tap slide navigation helpers
+  const touchStartPos = useRef({ x: 0, y: 0, time: 0 });
+
+  const handleMobileNext = (e) => {
+    if (e) e.stopPropagation();
+    const slides = activePresentation?.slides || [];
+    const currentIdx = slides.findIndex((s) => s.id === (selectedSlideId || selectedSlide?.id));
+    const safeIdx = currentIdx >= 0 ? currentIdx : 0;
+    if (safeIdx < slides.length - 1) {
+      const next = slides[safeIdx + 1];
+      handleSelectSlide(next);
+      handleGoLive(next);
+    }
+  };
+
+  const handleMobilePrev = (e) => {
+    if (e) e.stopPropagation();
+    const slides = activePresentation?.slides || [];
+    const currentIdx = slides.findIndex((s) => s.id === (selectedSlideId || selectedSlide?.id));
+    const safeIdx = currentIdx >= 0 ? currentIdx : 0;
+    if (safeIdx > 0) {
+      const prev = slides[safeIdx - 1];
+      handleSelectSlide(prev);
+      handleGoLive(prev);
+    }
+  };
+
+  const handleMobileFirst = () => {
+    const slides = activePresentation?.slides || [];
+    if (slides.length > 0) {
+      handleSelectSlide(slides[0]);
+      handleGoLive(slides[0]);
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    if (!e.touches?.[0]) return;
+    touchStartPos.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now()
+    };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!e.changedTouches?.[0]) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartPos.current.x;
+    const deltaY = touch.clientY - touchStartPos.current.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    const slides = activePresentation?.slides || [];
+    const currentIdx = slides.findIndex((s) => s.id === (selectedSlideId || selectedSlide?.id));
+    const safeIdx = currentIdx >= 0 ? currentIdx : 0;
+
+    // SWIPE UP OR DOWN (vertical swipe > 45px) -> Jump to first slide!
+    if (absY > 45 && absY > absX) {
+      handleMobileFirst();
+      return;
+    }
+
+    // TAP (minimal displacement)
+    if (absX < 20 && absY < 20) {
+      if (touch.clientX > window.innerWidth * 0.5) {
+        // Right side 50% tap -> next slide
+        if (safeIdx < slides.length - 1) {
+          const next = slides[safeIdx + 1];
+          handleSelectSlide(next);
+          handleGoLive(next);
+        }
+      } else {
+        // Left side 50% tap -> previous slide
+        if (safeIdx > 0) {
+          const prev = slides[safeIdx - 1];
+          handleSelectSlide(prev);
+          handleGoLive(prev);
+        }
+      }
     }
   };
 
@@ -1187,11 +1308,13 @@ export function ProjectorConsole({
 
   // Filter songs for Songs Tab using advanced word-priority ranking
   const filteredSongs = useMemo(() => {
-    const sourceList = songFilterTab === 'fav' ? songFavorites : (songsIndex || []);
+    let sourceList = songsIndex || [];
+    if (songFilterTab === 'fav') sourceList = songFavorites;
+    if (songFilterTab === 'my') sourceList = userSongs;
     if (!songQuery.trim()) return sourceList;
 
     return rankSongResults(sourceList, songQuery);
-  }, [songsIndex, songFavorites, songFilterTab, songQuery]);
+  }, [songsIndex, songFavorites, userSongs, songFilterTab, songQuery]);
 
   // Reset display count on query or tab change
   useEffect(() => {
@@ -1274,11 +1397,12 @@ export function ProjectorConsole({
         width: '100%',
         height: '100%',
         maxHeight: '100%',
-        padding: '0 0.5rem 0.4rem 0.5rem',
+        padding: isMobile ? '0 0.4rem 0.4rem 0.4rem' : '0 0.5rem 0.4rem 0.5rem',
         boxSizing: 'border-box',
-        display: 'grid',
-        gridTemplateColumns: '290px 1fr 270px',
-        gap: '0.65rem',
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
+        gridTemplateColumns: isMobile ? undefined : '290px 1fr 270px',
+        gap: isMobile ? 0 : '0.65rem',
         overflow: 'hidden',
         backgroundColor: 'var(--bg-canvas)',
         position: 'relative'
@@ -1369,12 +1493,14 @@ export function ProjectorConsole({
         height: '100%',
         maxHeight: '100%',
         overflow: 'hidden',
-        boxShadow: 'var(--shadow-sm)'
+        boxShadow: 'var(--shadow-sm)',
+        flex: isMobile ? 1 : undefined,
+        minHeight: 0
       }}>
-        {/* Sleek 3-Way Toggler: Media | Bible | Songs */}
+        {/* Sleek Toggler: Media (Desktop only) | Bible | Songs */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr',
           gap: '4px',
           padding: '4px',
           backgroundColor: 'var(--bg-canvas)',
@@ -1383,43 +1509,45 @@ export function ProjectorConsole({
           margin: '0.5rem 0.5rem 0.35rem 0.5rem',
           flexShrink: 0
         }}>
-          <button
-            onClick={() => {
-              setLeftTab('media');
-              if (projector?.clearHighlights) projector.clearHighlights();
-              const currentDoc = mediaDocs.find((d) => d.id === selectedMediaDocId) || mediaDocs[0];
-              if (currentDoc) {
-                setActivePresentation(currentDoc);
-                setSelectedSlideId(currentDoc.slides[0]?.id || null);
-              } else {
-                setActivePresentation({
-                  title: 'மீடியா கோப்புகள் / Media',
-                  badge: 'MEDIA',
-                  kind: 'media',
-                  slides: []
-                });
-                setSelectedSlideId(null);
-              }
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '5px',
-              padding: '6px 0',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: leftTab === 'media' ? 'var(--accent)' : 'transparent',
-              color: leftTab === 'media' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
-              fontWeight: 800,
-              fontSize: '0.76rem',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <ImageIcon size={14} />
-            <span>Media</span>
-          </button>
+          {!isMobile && (
+            <button
+              onClick={() => {
+                setLeftTab('media');
+                if (projector?.clearHighlights) projector.clearHighlights();
+                const currentDoc = mediaDocs.find((d) => d.id === selectedMediaDocId) || mediaDocs[0];
+                if (currentDoc) {
+                  setActivePresentation(currentDoc);
+                  setSelectedSlideId(currentDoc.slides[0]?.id || null);
+                } else {
+                  setActivePresentation({
+                    title: 'மீடியா கோப்புகள் / Media',
+                    badge: 'MEDIA',
+                    kind: 'media',
+                    slides: []
+                  });
+                  setSelectedSlideId(null);
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                padding: '6px 0',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: leftTab === 'media' ? 'var(--accent)' : 'transparent',
+                color: leftTab === 'media' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
+                fontWeight: 800,
+                fontSize: '0.76rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <ImageIcon size={14} />
+              <span>Media</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -1922,6 +2050,83 @@ export function ProjectorConsole({
                 })}
               </div>
             </div>
+
+            {/* MOBILE ONLY: Verses list with tap to go live fullscreen */}
+            {isMobile && (
+              <div style={{ marginTop: '0.75rem', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '6px',
+                  padding: '2px 0'
+                }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-tertiary)' }}>
+                    VERSES ({activePresentation.slides.length})
+                  </span>
+                  {activePresentation.slides.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const firstSlide = activePresentation.slides[0];
+                        handleSelectSlide(firstSlide);
+                        handleGoLive(firstSlide);
+                        setIsFullscreenMobilePresenter(true);
+                      }}
+                      style={{
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--accent)',
+                        color: 'var(--accent-contrast)',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {uiLang === 'ta' ? '▶ திரையிடு' : '▶ Present'}
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {activePresentation.slides.map((slide, idx) => (
+                    <div
+                      key={slide.id}
+                      onClick={() => {
+                        handleSelectSlide(slide);
+                        handleGoLive(slide);
+                        setIsFullscreenMobilePresenter(true);
+                      }}
+                      style={{
+                        padding: '7px 9px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--bg-canvas)',
+                        border: '1px solid var(--border-subtle)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent)' }}>
+                        {currentBookMeta?.name} {bibleChapterNum}:{idx + 1}
+                      </div>
+                      <div style={{
+                        fontSize: '0.78rem',
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.35,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {slide.body}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1930,164 +2135,368 @@ export function ProjectorConsole({
         {/* --------------------------------------------------------------------- */}
         {leftTab === 'songs' && (
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-            {/* Search Input & Favorite Filter */}
-            <div style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <button
-                  onClick={() => setSongFilterTab('all')}
-                  style={{
-                    flex: 1,
-                    padding: '3px 0',
-                    borderRadius: '4px',
-                    border: 'none',
-                    backgroundColor: songFilterTab === 'all' ? 'var(--accent-light)' : 'transparent',
-                    color: songFilterTab === 'all' ? 'var(--accent)' : 'var(--text-tertiary)',
-                    fontWeight: 750,
-                    fontSize: '0.7rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  All Songs
-                </button>
-                <button
-                  onClick={() => setSongFilterTab('fav')}
-                  style={{
-                    flex: 1,
-                    padding: '3px 0',
-                    borderRadius: '4px',
-                    border: 'none',
-                    backgroundColor: songFilterTab === 'fav' ? 'var(--accent-light)' : 'transparent',
-                    color: songFilterTab === 'fav' ? 'var(--accent)' : 'var(--text-tertiary)',
-                    fontWeight: 750,
-                    fontSize: '0.7rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Favorites ({songFavorites.length})
-                </button>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                backgroundColor: 'var(--bg-canvas)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '8px',
-                padding: '0 10px',
-                minHeight: '44px'
-              }}>
-                <Search size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Search song / பாடல் தேடுக..."
-                  value={songQuery}
-                  onChange={(e) => setSongQuery(e.target.value)}
-                  style={{
-                    border: 'none',
-                    outline: 'none',
-                    background: 'transparent',
-                    fontSize: '0.84rem',
-                    color: 'var(--text-primary)',
-                    width: '100%',
-                    fontWeight: 650
-                  }}
-                />
-                {songQuery && (
-                  <button onClick={() => setSongQuery('')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-                    <X size={14} style={{ color: 'var(--text-tertiary)' }} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Songs List */}
-            <div 
-              onScroll={handleSongListScroll}
-              style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0.5rem' }}
-            >
-              {/* Song count badge when searching */}
-              {songQuery.trim() && (
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent)', padding: '2px 6px 6px 6px' }}>
-                  {filteredSongs.length} songs found
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                {visibleSongs.map((s) => {
-                  const isSelected = selectedSongMeta?.id === s.id;
-                  const isFav = songFavorites.some((f) => f.id === s.id);
-
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={() => setSelectedSongMeta(s)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '7px 8px',
-                        borderRadius: '6px',
-                        backgroundColor: isSelected ? 'var(--accent-light)' : 'transparent',
-                        border: isSelected ? '1px solid var(--accent)' : '1px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 0.1s ease',
-                        gap: '6px'
-                      }}
-                    >
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{
-                          fontSize: '0.82rem',
-                          fontWeight: isSelected ? 800 : 650,
-                          color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {s.t}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSongFavorite(s);
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '2px',
-                          color: isFav ? 'var(--accent)' : 'var(--text-tertiary)'
-                        }}
-                        title={isFav ? 'Remove favorite' : 'Add favorite'}
-                      >
-                        <Star size={14} fill={isFav ? 'currentColor' : 'none'} />
-                      </button>
-                    </div>
-                  );
-                })}
-
-                {visibleSongs.length < filteredSongs.length && (
-                  <div 
-                    onClick={() => setSongDisplayCount(prev => Math.min(prev + 100, filteredSongs.length))}
+            {isMobile && mobileSongViewMode === 'stanzas' && selectedSongMeta ? (
+              // MOBILE STANZAS VIEW
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                {/* Header with Back, Title, and Present Button */}
+                <div style={{
+                  padding: '0.5rem 0.75rem',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  flexShrink: 0
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSongViewMode('list')}
                     style={{
-                      padding: '8px',
-                      textAlign: 'center',
-                      fontSize: '0.72rem',
-                      fontWeight: 650,
-                      color: 'var(--accent)',
-                      cursor: 'pointer',
-                      borderRadius: '4px',
-                      backgroundColor: 'var(--accent-light)',
-                      marginTop: '4px'
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '5px 8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-canvas)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
                     }}
                   >
-                    Showing {visibleSongs.length} of {filteredSongs.length} (Load more...)
+                    <ChevronLeft size={15} />
+                    <span>{uiLang === 'ta' ? 'பாடல்கள்' : 'Songs'}</span>
+                  </button>
+
+                  <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {selectedSongMeta?.t || selectedSongMeta?.title}
+                    </div>
+                    {(selectedSongMeta?.ro || selectedSongMeta?.englishTitle) && (
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {selectedSongMeta?.ro || selectedSongMeta?.englishTitle}
+                      </div>
+                    )}
+                  </div>
+
+                  {activePresentation.slides.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const firstSlide = activePresentation.slides[0];
+                        handleSelectSlide(firstSlide);
+                        handleGoLive(firstSlide);
+                        setIsFullscreenMobilePresenter(true);
+                      }}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--accent)',
+                        color: 'var(--accent-contrast)',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer',
+                        flexShrink: 0
+                      }}
+                    >
+                      {uiLang === 'ta' ? '▶ திரையிடு' : '▶ Present'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Stanzas List */}
+                {loadingSong ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-tertiary)', fontSize: '0.82rem', gap: '8px' }}>
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)' }} />
+                    <span>பாடல் வரிகள் ஏற்றப்படுகிறது...</span>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', padding: '0.5rem' }}>
+                    {activePresentation.slides.map((slide, idx) => (
+                      <div
+                        key={slide.id || idx}
+                        onClick={() => {
+                          handleSelectSlide(slide);
+                          handleGoLive(slide);
+                          setIsFullscreenMobilePresenter(true);
+                        }}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-canvas)',
+                          border: '1px solid var(--border-subtle)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '3px'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent)' }}>
+                          {slide.title || `சரணம் ${idx + 1}`}
+                        </div>
+                        <div style={{
+                          fontSize: '0.8rem',
+                          color: 'var(--text-primary)',
+                          lineHeight: 1.35,
+                          whiteSpace: 'pre-line',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {slide.body || slide.text}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            </div>
+            ) : (
+              // SONGS SEARCH & LIST (Normal View)
+              <>
+                {/* Search Input & Favorite Filter */}
+                <div style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                    <div style={{ display: 'flex', gap: '3px', flex: 1 }}>
+                      <button
+                        onClick={() => setSongFilterTab('all')}
+                        style={{
+                          flex: 1,
+                          padding: '4px 0',
+                          borderRadius: '4px',
+                          border: 'none',
+                          backgroundColor: songFilterTab === 'all' ? 'var(--accent-light)' : 'transparent',
+                          color: songFilterTab === 'all' ? 'var(--accent)' : 'var(--text-tertiary)',
+                          fontWeight: 750,
+                          fontSize: '0.68rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setSongFilterTab('fav')}
+                        style={{
+                          flex: 1,
+                          padding: '4px 0',
+                          borderRadius: '4px',
+                          border: 'none',
+                          backgroundColor: songFilterTab === 'fav' ? 'var(--accent-light)' : 'transparent',
+                          color: songFilterTab === 'fav' ? 'var(--accent)' : 'var(--text-tertiary)',
+                          fontWeight: 750,
+                          fontSize: '0.68rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        Fav ({songFavorites.length})
+                      </button>
+                      <button
+                        onClick={() => setSongFilterTab('my')}
+                        style={{
+                          flex: 1,
+                          padding: '4px 0',
+                          borderRadius: '4px',
+                          border: 'none',
+                          backgroundColor: songFilterTab === 'my' ? 'var(--accent-light)' : 'transparent',
+                          color: songFilterTab === 'my' ? 'var(--accent)' : 'var(--text-tertiary)',
+                          fontWeight: 750,
+                          fontSize: '0.68rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        My ({userSongs.length})
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!user && onOpenAuth) {
+                          onOpenAuth();
+                        } else if (onOpenAddSong) {
+                          onOpenAddSong();
+                        }
+                      }}
+                      style={{
+                        padding: '4px 7px',
+                        borderRadius: '4px',
+                        border: 'none',
+                        backgroundColor: 'var(--accent)',
+                        color: '#ffffff',
+                        fontSize: '0.68rem',
+                        fontWeight: 750,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        flexShrink: 0
+                      }}
+                      title={t.addSong || 'Add Song'}
+                    >
+                      <Plus size={12} />
+                      <span>{t.addSong || 'Add'}</span>
+                    </button>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: 'var(--bg-canvas)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    padding: '0 10px',
+                    minHeight: '44px'
+                  }}>
+                    <Search size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                    <input
+                      type="text"
+                      placeholder="Search song / பாடல் தேடுக..."
+                      value={songQuery}
+                      onChange={(e) => setSongQuery(e.target.value)}
+                      style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        fontSize: '0.84rem',
+                        color: 'var(--text-primary)',
+                        width: '100%',
+                        fontWeight: 650
+                      }}
+                    />
+                    {songQuery && (
+                      <button onClick={() => setSongQuery('')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        <X size={14} style={{ color: 'var(--text-tertiary)' }} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Songs List */}
+                <div 
+                  onScroll={handleSongListScroll}
+                  style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0.5rem' }}
+                >
+                  {/* Song count badge when searching */}
+                  {songQuery.trim() && (
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent)', padding: '2px 6px 6px 6px' }}>
+                      {filteredSongs.length} songs found
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {visibleSongs.map((s) => {
+                      const isSelected = selectedSongMeta?.id === s.id;
+                      const isFav = songFavorites.some((f) => f.id === s.id);
+
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => {
+                            setSelectedSongMeta(s);
+                            if (isMobile) setMobileSongViewMode('stanzas');
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '7px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: isSelected ? 'var(--accent-light)' : 'transparent',
+                            border: isSelected ? '1px solid var(--accent)' : '1px solid transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.1s ease',
+                            gap: '6px'
+                          }}
+                        >
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{
+                              fontSize: '0.82rem',
+                              fontWeight: isSelected ? 800 : 650,
+                              color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {s.t || s.title}
+                            </div>
+                            {(s.ro || s.englishTitle) && (
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {s.ro || s.englishTitle}
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            {s.custom && onDeleteSong && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(t.confirmDeleteSong || 'Are you sure you want to delete this song?')) {
+                                    onDeleteSong(s.id);
+                                    if (selectedSongMeta?.id === s.id) setSelectedSongMeta(null);
+                                  }
+                                }}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  color: '#ef4444'
+                                }}
+                                title={t.deleteSong || 'Delete'}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSongFavorite(s);
+                              }}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                color: isFav ? 'var(--accent)' : 'var(--text-tertiary)'
+                              }}
+                              title={isFav ? 'Remove favorite' : 'Add favorite'}
+                            >
+                              <Star size={14} fill={isFav ? 'currentColor' : 'none'} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {visibleSongs.length < filteredSongs.length && (
+                      <div 
+                        onClick={() => setSongDisplayCount(prev => Math.min(prev + 100, filteredSongs.length))}
+                        style={{
+                          padding: '8px',
+                          textAlign: 'center',
+                          fontSize: '0.72rem',
+                          fontWeight: 650,
+                          color: 'var(--accent)',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          backgroundColor: 'var(--accent-light)',
+                          marginTop: '4px'
+                        }}
+                      >
+                        Showing {visibleSongs.length} of {filteredSongs.length} (Load more...)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </aside>
@@ -2095,14 +2504,15 @@ export function ProjectorConsole({
       {/* ========================================================================= */}
       {/* COLUMN 2: MIDDLE - "PRESENTATION EDITOR" (With 16:9 Mini Slides Grid)     */}
       {/* ========================================================================= */}
-      <main style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        maxHeight: '100%',
-        overflow: 'hidden',
-        gap: '0.65rem'
-      }}>
+      {!isMobile && (
+        <main style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          maxHeight: '100%',
+          overflow: 'hidden',
+          gap: '0.65rem'
+        }}>
         {/* Middle Stage Row: Main Canvas Preview + Mini Slide Editor Stack */}
         <div style={{
           display: 'grid',
@@ -3542,11 +3952,13 @@ export function ProjectorConsole({
           </div>
         </section>
       </main>
+      )}
 
       {/* ========================================================================= */}
       {/* COLUMN 3: RIGHT SIDEBAR - "Active Output" (Reduced 30% Preview Screen)   */}
       {/* ========================================================================= */}
-      <aside style={{
+      {!isMobile && (
+        <aside style={{
         backgroundColor: 'var(--bg-surface)',
         borderRadius: '8px',
         border: '1px solid var(--border-subtle)',
@@ -3783,32 +4195,241 @@ export function ProjectorConsole({
           </button>
         </div>
 
-        {/* Big Bottom Action Button: [Open output] */}
-        <button
-          onClick={projector.openProjectorWindow}
-          style={{
-            marginTop: 'auto',
-            padding: '10px',
-            borderRadius: '6px',
-            backgroundColor: '#e5b965',
-            color: '#1a1306',
-            fontWeight: 800,
-            fontSize: '0.84rem',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(229,185,101,0.25)',
-            transition: 'all 0.15s ease'
-          }}
-          title="Open projector output in dedicated window for 2nd monitor"
-        >
-          <ExternalLink size={15} />
-          <span>Open output</span>
-        </button>
+        {/* Bottom Actions: [Open output] & [Close output] */}
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <button
+            onClick={projector.openProjectorWindow}
+            style={{
+              padding: '10px',
+              borderRadius: '6px',
+              backgroundColor: '#e5b965',
+              color: '#1a1306',
+              fontWeight: 800,
+              fontSize: '0.84rem',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(229,185,101,0.25)',
+              transition: 'all 0.15s ease'
+            }}
+            title="Open projector output in dedicated window for 2nd monitor"
+          >
+            <ExternalLink size={15} />
+            <span>Open output</span>
+          </button>
+
+          {projector.closeProjectorWindow && (
+            <button
+              type="button"
+              onClick={projector.closeProjectorWindow}
+              style={{
+                padding: '8px 10px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                color: '#f87171',
+                fontWeight: 750,
+                fontSize: '0.78rem',
+                border: '1px solid rgba(239, 68, 68, 0.28)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title={t.closeProjectorWindow || 'Close 2nd Screen Window'}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)'; }}
+            >
+              <MonitorOff size={14} />
+              <span>{t.closeProjectorWindow || 'Close 2nd Screen'}</span>
+            </button>
+          )}
+        </div>
       </aside>
+      )}
+
+      {/* ========================================================================= */}
+      {/* FULLSCREEN MOBILE PRESENTER OVERLAY                                      */}
+      {/* ========================================================================= */}
+      {isMobile && isFullscreenMobilePresenter && (
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: selectedSlide?.bgType === 'texture' ? '#0b111e' : (selectedSlide?.backgroundColor || '#0c1322'),
+            color: selectedSlide?.textColor || '#ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            touchAction: 'none'
+          }}
+        >
+          {/* Optional background texture image */}
+          {selectedSlide?.bgType === 'texture' && selectedSlide?.textureSrc && (
+            <>
+              <img
+                src={selectedSlide.textureSrc}
+                alt="texture"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none'
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: `rgba(0, 0, 0, ${selectedSlide.bgOverlayOpacity ?? 0.70})`,
+                  pointerEvents: 'none'
+                }}
+              />
+            </>
+          )}
+
+          {/* Floating Minimal Top Control Bar (Non-intrusive) */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%)'
+            }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFullscreenMobilePresenter(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                color: '#ffffff',
+                fontSize: '0.82rem',
+                fontWeight: 750,
+                cursor: 'pointer'
+              }}
+            >
+              <ChevronLeft size={16} />
+              <span>{uiLang === 'ta' ? 'வெளியேறு' : 'Exit'}</span>
+            </button>
+
+            {/* Slide counter pill */}
+            <div
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 750,
+                color: 'rgba(255, 255, 255, 0.85)',
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.15)'
+              }}
+            >
+              {(() => {
+                const slides = activePresentation?.slides || [];
+                const idx = slides.findIndex((s) => s.id === (selectedSlideId || selectedSlide?.id));
+                return `${idx >= 0 ? idx + 1 : 1} / ${slides.length || 1}`;
+              })()}
+            </div>
+
+            {/* Live Indicator Pill */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                color: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                padding: '4px 9px',
+                borderRadius: '12px',
+                border: '1px solid rgba(239, 68, 68, 0.3)'
+              }}
+            >
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+              LIVE
+            </div>
+          </div>
+
+          {/* Center Stage Presentation Content */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem',
+              position: 'relative',
+              zIndex: 5,
+              textAlign: selectedSlide?.align || 'center'
+            }}
+          >
+            {selectedSlide && (
+              <AutoFitSlideContent
+                text={selectedSlide.body || selectedSlide.title}
+                reference={selectedSlide.reference}
+                highlights={activePresentation.kind === 'bible' ? bibleHighlights : []}
+                fontFamily={selectedSlide.fontFamily || 'Noto Sans Tamil'}
+                textColor={selectedSlide.textColor || '#ffffff'}
+                referenceColor={selectedSlide.referenceColor || selectedSlide.accent || effectiveRefColor}
+                accentColor={selectedSlide.referenceColor || selectedSlide.accent || effectiveRefColor}
+                align={selectedSlide.align || 'center'}
+                preferredSize={selectedSlide.fontSize || 42}
+                referenceSize={selectedSlide.referenceSize || 24}
+                paddingX={16}
+                paddingY={16}
+                altLineColorEnabled={activePresentation.kind === 'song' ? (selectedSlide.altLineColorEnabled || songStyle.altLineColorEnabled) : false}
+                altLineColor={activePresentation.kind === 'song' ? (selectedSlide.altLineColor || songStyle.altLineColor || '#38bdf8') : undefined}
+              />
+            )}
+          </div>
+
+          {/* Subtle Tap Guides at Bottom */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 16px',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 100%)',
+              fontSize: '0.68rem',
+              color: 'rgba(255, 255, 255, 0.5)',
+              pointerEvents: 'none'
+            }}
+          >
+            <span>◀ {uiLang === 'ta' ? 'இடது: முந்தையது' : 'Tap left: Prev'}</span>
+            <span>↕ {uiLang === 'ta' ? 'மேல்/கீழ்: தொடக்கம்' : 'Swipe: Start'}</span>
+            <span>{uiLang === 'ta' ? 'வலது: அடுத்தது' : 'Tap right: Next'} ▶</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

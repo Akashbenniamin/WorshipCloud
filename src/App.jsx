@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './components/HomePage';
 import { BibleReader } from './components/BibleReader';
@@ -9,10 +9,13 @@ import { ToolsSection } from './components/ToolsSection';
 import { QuickSearchModal } from './components/QuickSearchModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
+import { AddSongModal } from './components/AddSongModal';
 import { PresenterToolbar } from './components/PresenterToolbar';
 import { ProjectorDisplay } from './components/ProjectorDisplay';
 import { useProjectorSync } from './hooks/useProjectorSync';
 import { useAuth } from './hooks/useAuth';
+import { getLocalUserSongs, addCustomSong, removeCustomSong, syncUserSongs } from './lib/userSongsStore';
+import { pullCloudSettings, syncSaveSettings } from './lib/userSettingsStore';
 
 export function App() {
   // Check if this window is running as dedicated projector output (for 2nd monitor)
@@ -69,7 +72,51 @@ export function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAddSongOpen, setIsAddSongOpen] = useState(false);
   const [selectedSongForViewer, setSelectedSongForViewer] = useState(null);
+
+  // Custom User Songs State (Local + Cloud Synced)
+  const [userSongs, setUserSongs] = useState(() => getLocalUserSongs());
+
+  // Cloud sync custom songs and settings upon Google sign-in
+  useEffect(() => {
+    if (auth.user) {
+      syncUserSongs(auth.user).then((synced) => {
+        if (Array.isArray(synced)) setUserSongs(synced);
+      });
+      const cloudSettings = pullCloudSettings(auth.user);
+      if (cloudSettings) {
+        if (cloudSettings.theme) setTheme(cloudSettings.theme);
+        if (cloudSettings.fontSize) setFontSize(cloudSettings.fontSize);
+        if (cloudSettings.uiLang) setUiLang(cloudSettings.uiLang);
+      }
+    }
+  }, [auth.user]);
+
+  // Sync settings when changed (separate for Mobile vs PC)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      syncSaveSettings({ theme, fontSize, uiLang }, auth.user);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [theme, fontSize, uiLang, auth.user]);
+
+  // Combined Songs Index (Custom songs + Original Index)
+  const combinedSongsIndex = useMemo(() => {
+    if (!songsIndex && !userSongs.length) return null;
+    return [...userSongs, ...(songsIndex || [])];
+  }, [songsIndex, userSongs]);
+
+  const handleAddCustomSong = async (songData) => {
+    const result = await addCustomSong({ ...songData, user: auth.user });
+    setUserSongs(result.songs);
+    return result.song;
+  };
+
+  const handleDeleteCustomSong = async (songId) => {
+    const updated = await removeCustomSong(songId, auth.user);
+    setUserSongs(updated);
+  };
 
   // Apply theme to DOM
   useEffect(() => {
@@ -200,19 +247,29 @@ export function App() {
 
         {activeTab === 'songs' && (
           <SongReader
-            songsIndex={songsIndex}
+            songsIndex={combinedSongsIndex}
+            userSongs={userSongs}
             fontSize={fontSize}
             selectedSongInit={selectedSongForViewer}
             uiLang={uiLang}
+            onOpenAddSong={() => setIsAddSongOpen(true)}
+            onDeleteSong={handleDeleteCustomSong}
+            user={auth.user}
+            onOpenAuth={() => setIsAuthOpen(true)}
           />
         )}
 
         {activeTab === 'projector' && (
           <ProjectorConsole
             booksMeta={booksMeta}
-            songsIndex={songsIndex}
+            songsIndex={combinedSongsIndex}
+            userSongs={userSongs}
             projector={projector}
             uiLang={uiLang}
+            onOpenAddSong={() => setIsAddSongOpen(true)}
+            onDeleteSong={handleDeleteCustomSong}
+            user={auth.user}
+            onOpenAuth={() => setIsAuthOpen(true)}
           />
         )}
 
@@ -226,7 +283,7 @@ export function App() {
         )}
 
         {activeTab === 'tools' && (
-          <ToolsSection songsIndex={songsIndex} uiLang={uiLang} projector={projector} />
+          <ToolsSection songsIndex={combinedSongsIndex} uiLang={uiLang} projector={projector} />
         )}
       </main>
 
@@ -242,6 +299,7 @@ export function App() {
           onToggleClear={projector.toggleClear}
           onUnproject={projector.unproject}
           onOpenProjectorWindow={projector.openProjectorWindow}
+          onCloseProjectorWindow={projector.closeProjectorWindow}
           uiLang={uiLang}
         />
       )}
@@ -254,7 +312,7 @@ export function App() {
         onSelectBibleReference={handleSelectBibleReference}
         onSelectPage={handleSelectPage}
         onSelectSong={handleSelectSong}
-        songsIndex={songsIndex}
+        songsIndex={combinedSongsIndex}
       />
 
       {/* Settings Modal */}
@@ -275,6 +333,16 @@ export function App() {
         onClose={() => setIsAuthOpen(false)}
         uiLang={uiLang}
         auth={auth}
+      />
+
+      {/* Add Custom Song Modal */}
+      <AddSongModal
+        isOpen={isAddSongOpen}
+        onClose={() => setIsAddSongOpen(false)}
+        onSave={handleAddCustomSong}
+        user={auth.user}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        uiLang={uiLang}
       />
     </div>
   );

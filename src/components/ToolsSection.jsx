@@ -198,26 +198,38 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
     } catch {}
   }, [activeTool]);
 
-  // New Year Counter State
-  const [nyTargetYear, setNyTargetYear] = useState(() => getNearestNewYear().getFullYear());
-  const [nyGreeting, setNyGreeting] = useState(isEn ? 'New Year Watch Night Service' : 'புத்தாண்டு நள்ளிரவு ஆராதனை');
+  // New Year Gradients
+  const nyGradients = [
+    { id: 'grad-1', name: 'Midnight Gold', value: 'radial-gradient(ellipse at center, #1e1b4b 0%, #0f172a 50%, #020617 100%)' },
+    { id: 'grad-2', name: 'Cosmic Purple', value: 'linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #0f0728 100%)' },
+    { id: 'grad-3', name: 'Deep Aurora', value: 'linear-gradient(135deg, #064e3b 0%, #022c22 50%, #01140e 100%)' },
+    { id: 'grad-4', name: 'Obsidian Amber', value: 'linear-gradient(135deg, #451a03 0%, #1c1917 50%, #090d16 100%)' }
+  ];
+
+  const clockGradients = [
+    { id: 'c-grad-1', name: 'Deep Cosmic', value: 'radial-gradient(ellipse at center, #1e1b4b 0%, #0f172a 45%, #020617 100%)' },
+    { id: 'c-grad-2', name: 'Midnight Navy', value: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #090d16 100%)' },
+    { id: 'c-grad-3', name: 'Royal Emerald', value: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #021a14 100%)' },
+    { id: 'c-grad-4', name: 'Obsidian Pure', value: '#050811' }
+  ];
+
+  // New Year Counter State (Dynamic upcoming nearest New Year)
   const [nyVerse, setNyVerse] = useState(
     isEn 
       ? '"Behold, I will do a new thing; now it shall spring forth." — Isaiah 43:19'
       : '"இதோ, நான் புதிய காரியத்தைச் செய்கிறேன்; இப்பொழுதே அது தோன்றும்." — ஏசாயா 43:19'
   );
-  const [nyBgType, setNyBgType] = useState('texture');
+  const [nyBgType, setNyBgType] = useState('gradient');
+  const [nyGradient, setNyGradient] = useState(nyGradients[0].value);
   const [nyTextureId, setNyTextureId] = useState('sunbeams_golden');
   const [nyOverlayOpacity, setNyOverlayOpacity] = useState(0.70);
   const [nyCelebrate, setNyCelebrate] = useState(false);
 
-  // Church Clock State
-  const [clockTitle, setClockTitle] = useState(isEn ? 'Sanctuary Worship Time' : 'ஆலய ஆராதனை நேரம்');
+  // Church Clock State (No textures, larger time, vibrant gradients)
   const [clockFormat24h, setClockFormat24h] = useState(false);
   const [clockShowSeconds, setClockShowSeconds] = useState(true);
-  const [clockBgType, setClockBgType] = useState('texture');
-  const [clockTextureId, setClockTextureId] = useState('clouds_golden');
-  const [clockOverlayOpacity, setClockOverlayOpacity] = useState(0.70);
+  const [clockGradient, setClockGradient] = useState(clockGradients[0].value);
+  const [clockAnimatedBg, setClockAnimatedBg] = useState(true);
 
   // Projection status checks
   const isNewYearLive = projector?.activeSlide?.type === 'new-year-counter';
@@ -233,12 +245,12 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
     projector.projectSlide({
       id: 'tool-new-year-counter',
       type: 'new-year-counter',
-      title: nyGreeting,
-      targetDate: new Date(nyTargetYear, 0, 1, 0, 0, 0).getTime(),
+      title: isEn ? 'New Year Countdown' : 'புத்தாண்டு கவுண்டவுன்',
+      targetDate: getNearestNewYear().getTime(),
       celebrate: nyCelebrate,
-      customGreeting: nyGreeting,
       customVerse: nyVerse,
       bgType: nyBgType,
+      gradientBg: nyGradient,
       textureSrc: tex?.src || './images/card-backgrounds/sunbeams-golden.jpg',
       bgOverlayOpacity: nyOverlayOpacity,
       uiLang
@@ -253,12 +265,12 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
       projector.projectSlide({
         id: 'tool-new-year-counter',
         type: 'new-year-counter',
-        title: nyGreeting,
-        targetDate: new Date(nyTargetYear, 0, 1, 0, 0, 0).getTime(),
+        title: isEn ? 'New Year Countdown' : 'புத்தாண்டு கவுண்டவுன்',
+        targetDate: getNearestNewYear().getTime(),
         celebrate: next,
-        customGreeting: nyGreeting,
         customVerse: nyVerse,
         bgType: nyBgType,
+        gradientBg: nyGradient,
         textureSrc: tex?.src || './images/card-backgrounds/sunbeams-golden.jpg',
         bgOverlayOpacity: nyOverlayOpacity,
         uiLang
@@ -272,17 +284,15 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
       projector.unproject();
       return;
     }
-    const tex = SLIDE_TEXTURES.find(t => t.id === clockTextureId);
     projector.projectSlide({
       id: 'tool-church-clock',
       type: 'clock',
-      title: clockTitle,
-      serviceTitle: clockTitle,
+      title: isEn ? 'Church Clock' : 'ஆலய கடிகாரம்',
       format24h: clockFormat24h,
       showSeconds: clockShowSeconds,
-      bgType: clockBgType,
-      textureSrc: tex?.src || './images/card-backgrounds/clouds-golden.jpg',
-      bgOverlayOpacity: clockOverlayOpacity,
+      bgType: 'gradient',
+      gradientBg: clockGradient,
+      animatedBg: clockAnimatedBg,
       uiLang
     });
   };
@@ -1050,11 +1060,11 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               position: 'relative'
             }}>
               <NewYearCounterView
-                targetDate={new Date(nyTargetYear, 0, 1, 0, 0, 0).getTime()}
+                targetDate={getNearestNewYear().getTime()}
                 celebrate={nyCelebrate}
-                customGreeting={nyGreeting}
                 customVerse={nyVerse}
                 bgType={nyBgType}
+                gradientBg={nyGradient}
                 textureSrc={nyTexture?.src || './images/card-backgrounds/sunbeams-golden.jpg'}
                 bgOverlayOpacity={nyOverlayOpacity}
                 uiLang={uiLang}
@@ -1127,30 +1137,34 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               </div>
             </div>
 
-            {/* Target Year Selector */}
+            {/* Background Theme Gradients */}
             <div>
-              <label style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                {isEn ? 'Target New Year' : 'புத்தாண்டு இலக்கு'}
+              <label style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                {isEn ? 'Background Theme (Gradients)' : 'பின்னணி தீம் (வண்ணக் கலவை)'}
               </label>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {[2026, 2027, 2028, 2029, 2030].map(y => (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                {nyGradients.map((g) => (
                   <button
-                    key={y}
+                    key={g.id}
                     type="button"
-                    onClick={() => setNyTargetYear(y)}
+                    onClick={() => {
+                      setNyBgType('gradient');
+                      setNyGradient(g.value);
+                    }}
                     style={{
-                      flex: 1,
-                      padding: '6px',
-                      borderRadius: '6px',
-                      border: nyTargetYear === y ? '2px solid #f59e0b' : '1px solid var(--border-subtle)',
-                      backgroundColor: nyTargetYear === y ? 'rgba(245, 158, 11, 0.15)' : 'var(--bg-canvas)',
-                      color: nyTargetYear === y ? '#d97706' : 'var(--text-primary)',
-                      fontWeight: 800,
-                      fontSize: '0.8rem',
-                      cursor: 'pointer'
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: g.value,
+                      border: nyBgType === 'gradient' && nyGradient === g.value ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.15)',
+                      color: '#ffffff',
+                      fontWeight: 750,
+                      fontSize: '0.74rem',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
                     }}
                   >
-                    {y}
+                    {g.name}
                   </button>
                 ))}
               </div>
@@ -1394,12 +1408,11 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               position: 'relative'
             }}>
               <ChurchClockView
-                serviceTitle={clockTitle}
                 format24h={clockFormat24h}
                 showSeconds={clockShowSeconds}
-                bgType={clockBgType}
-                textureSrc={clockTexture?.src || './images/card-backgrounds/clouds-golden.jpg'}
-                bgOverlayOpacity={clockOverlayOpacity}
+                bgType="gradient"
+                gradientBg={clockGradient}
+                animatedBg={clockAnimatedBg}
                 uiLang={uiLang}
                 isMini={false}
               />
@@ -1505,81 +1518,60 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               </div>
             </div>
 
-            {/* Service Header Title Input */}
-            <div>
-              <label style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                {isEn ? 'Service / Church Header Title' : 'ஆராதனை / ஆலய தலைப்பு'}
-              </label>
-              <input
-                type="text"
-                value={clockTitle}
-                onChange={(e) => setClockTitle(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '7px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border-subtle)',
-                  backgroundColor: 'var(--bg-canvas)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.82rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            {/* Background Texture Selector */}
+            {/* Background Gradients Selector */}
             <div>
               <label style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
-                {isEn ? 'Background Image Texture' : 'பின்னணி அமைவு'}
+                {isEn ? 'Background Theme (Gradients)' : 'பின்னணி வண்ணக் கலவை'}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                {SLIDE_TEXTURES.slice(0, 6).map(tex => (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                {clockGradients.map((g) => (
                   <button
-                    key={tex.id}
+                    key={g.id}
                     type="button"
-                    onClick={() => setClockTextureId(tex.id)}
+                    onClick={() => setClockGradient(g.value)}
                     style={{
-                      height: '42px',
-                      borderRadius: '6px',
-                      border: clockTextureId === tex.id ? '2px solid #0284c7' : '1px solid var(--border-subtle)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      padding: 0,
-                      cursor: 'pointer'
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: g.value,
+                      border: clockGradient === g.value ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.15)',
+                      color: '#ffffff',
+                      fontWeight: 750,
+                      fontSize: '0.74rem',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
                     }}
-                    title={tex.label}
                   >
-                    <img src={tex.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    {clockTextureId === tex.id && (
-                      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(2, 132, 199, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Check size={14} style={{ color: '#fff', strokeWidth: 3 }} />
-                      </div>
-                    )}
+                    {g.name}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Darkness Scrim Slider */}
+            {/* Animated Ambient Shimmer Toggle */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                  {isEn ? 'Darkness Scrim' : 'இருள் மேலடுக்கு'}
-                </span>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0284c7' }}>
-                  {Math.round(clockOverlayOpacity * 100)}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0.2"
-                max="0.95"
-                step="0.05"
-                value={clockOverlayOpacity}
-                onChange={(e) => setClockOverlayOpacity(parseFloat(e.target.value))}
-                style={{ width: '100%', accentColor: '#0284c7', cursor: 'pointer' }}
-              />
+              <button
+                type="button"
+                onClick={() => setClockAnimatedBg((v) => !v)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: clockAnimatedBg ? 'rgba(56, 189, 248, 0.15)' : 'var(--bg-canvas)',
+                  border: clockAnimatedBg ? '1.5px solid #38bdf8' : '1px solid var(--border-subtle)',
+                  color: clockAnimatedBg ? '#38bdf8' : 'var(--text-secondary)',
+                  fontWeight: 750,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>✨ {isEn ? 'Subtle Ambient Background Motion' : 'மென்மையான பின்னணி ஒளி இயக்கம்'}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>({clockAnimatedBg ? (isEn ? 'ON' : 'இயக்கத்தில்') : (isEn ? 'OFF' : 'அணைக்கப்பட்டது')})</span>
+              </button>
             </div>
           </div>
         </div>

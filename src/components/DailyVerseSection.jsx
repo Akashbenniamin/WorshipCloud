@@ -311,6 +311,15 @@ export function DailyVerseSection({
   const isEn = uiLang === 'en';
   const cardRef = useRef(null);
 
+  // Responsive mobile state
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Pool & Verse State
   const [dailyPool, setDailyPool] = useState(null);
   const [currentVerseRef, setCurrentVerseRef] = useState(POPULAR_VERSES[0]);
@@ -833,30 +842,35 @@ export function DailyVerseSection({
         </div>
       </div>
 
-      {/* Main 2-Column Split Layout: Left is 100% Dedicated to Card Preview, Right has Customizer & Saved */}
+      {/* Main Split Layout: Desktop 2-Column, Mobile Top Portion Fixed Preview + Bottom Portion Scrollable Controls */}
       <div style={{
         flex: 1,
         minHeight: 0,
-        display: 'grid',
-        gridTemplateColumns: 'minmax(350px, 1.25fr) minmax(330px, 1fr)',
-        gap: '0.85rem',
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
+        gridTemplateColumns: isMobile ? undefined : 'minmax(350px, 1.25fr) minmax(330px, 1fr)',
+        gap: isMobile ? '0.5rem' : '0.85rem',
         overflow: 'hidden',
         alignItems: 'stretch'
       }}>
         {/* ===================================================================== */}
-        {/* LEFT COLUMN: PURELY DEDICATED TO DISPLAYING THE CARD (Independently scrollable) */}
+        {/* PREVIEW CARD: Desktop Left Column (Scrollable), Mobile Fixed Top Portion */}
         {/* ===================================================================== */}
         <div style={{
-          height: '100%',
-          overflowY: 'auto',
+          height: isMobile ? '38vh' : '100%',
+          flexShrink: isMobile ? 0 : 1,
+          overflowY: isMobile ? 'auto' : 'auto',
           overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'flex-start',
-          padding: '0.5rem 0.5rem 2.5rem 0.5rem',
+          justifyContent: isMobile ? 'center' : 'flex-start',
+          padding: isMobile ? '0.35rem' : '0.5rem 0.5rem 2.5rem 0.5rem',
           boxSizing: 'border-box',
-          width: '100%'
+          width: '100%',
+          backgroundColor: isMobile ? 'var(--bg-surface)' : 'transparent',
+          borderRadius: isMobile ? '10px' : 0,
+          border: isMobile ? '1px solid var(--border-subtle)' : 'none'
         }}>
           {/* The Live Interactive Verse Card (No Watermark, No Calendar Icon, Auto-Fitting Font) */}
           <div
@@ -864,21 +878,23 @@ export function DailyVerseSection({
             style={{
               background: (selectedBgType === 'gradient' || selectedBgType === 'custom_color') ? selectedBg : '#0c1322',
               color: activeTextColor,
-              borderRadius: '20px',
+              borderRadius: isMobile ? '14px' : '20px',
               border: isDarkBg ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(0,0,0,0.1)',
-              boxShadow: '0 20px 45px -12px rgba(0,0,0,0.45)',
-              padding: '2rem 2rem',
+              boxShadow: '0 15px 35px -8px rgba(0,0,0,0.45)',
+              padding: isMobile ? '1rem 1.2rem' : '2rem 2rem',
               position: 'relative',
               overflow: 'hidden',
               width: '100%',
-              maxWidth: aspectRatio === '16 / 9' ? '720px' : (aspectRatio === '1 / 1' ? '460px' : (aspectRatio === '4 / 5' ? '400px' : '560px')),
+              maxWidth: isMobile ? '340px' : (aspectRatio === '16 / 9' ? '720px' : (aspectRatio === '1 / 1' ? '460px' : (aspectRatio === '4 / 5' ? '400px' : '560px'))),
               aspectRatio: aspectRatio === 'auto' ? undefined : aspectRatio,
-              minHeight: aspectRatio === 'auto' ? '340px' : undefined,
+              minHeight: aspectRatio === 'auto' ? (isMobile ? '200px' : '340px') : undefined,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               transition: 'all 0.2s ease',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              transform: isMobile ? 'scale(0.88)' : 'none',
+              transformOrigin: 'center center'
             }}
           >
             {/* Background Texture or Custom Image Layer */}
@@ -1082,14 +1098,16 @@ export function DailyVerseSection({
         {/* RIGHT COLUMN: Customizer Settings Panel & Saved Cards Library         */}
         {/* ===================================================================== */}
         <div style={{
-          height: '100%',
+          flex: 1,
+          minHeight: 0,
+          height: isMobile ? 'calc(100% - 38vh - 0.5rem)' : '100%',
           overflowY: 'auto',
           overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.8rem',
           paddingRight: '4px',
-          paddingBottom: '2.5rem',
+          paddingBottom: isMobile ? '1.5rem' : '2.5rem',
           boxSizing: 'border-box'
         }}>
           {/* Navigation Tabs */}

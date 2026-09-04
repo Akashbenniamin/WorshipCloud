@@ -192,7 +192,7 @@ export function AuthModal({
                 {user ? t.profile : t.signInTitle}
               </h3>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                Worship Cloud • Supabase Auth
+                Worship Cloud Account
               </div>
             </div>
           </div>
@@ -482,26 +482,6 @@ export function AuthModal({
                 >
                   {t.signInSubtitle}
                 </p>
-              </div>
-
-              {/* Free Tier Notice */}
-              <div
-                style={{
-                  padding: '0.65rem 0.9rem',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  color: '#10b981',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-              >
-                <CheckCircle2 size={15} />
-                {t.freeTierNotice}
               </div>
 
               {/* Big Continue with Google Button */}

@@ -64,6 +64,12 @@ export function useProjectorSync() {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         channelRef.current = new BroadcastChannel(CHANNEL_NAME);
         channelRef.current.onmessage = (event) => {
+          if (event?.data?.type === 'CLOSE_PROJECTOR_WINDOW') {
+            if (typeof window !== 'undefined' && (window.location.hash === '#projector' || window.location.search.includes('projector=true'))) {
+              window.close();
+            }
+            return;
+          }
           if (event?.data && event.data.timestamp > lastTimestampRef.current) {
             lastTimestampRef.current = event.data.timestamp;
             setState(event.data);
@@ -76,6 +82,12 @@ export function useProjectorSync() {
 
     // Storage Event Listener (cross-tab / cross-window)
     const handleStorage = (e) => {
+      if (e.key === 'ortho_close_projector_trigger') {
+        if (typeof window !== 'undefined' && (window.location.hash === '#projector' || window.location.search.includes('projector=true'))) {
+          window.close();
+        }
+        return;
+      }
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
@@ -90,6 +102,12 @@ export function useProjectorSync() {
 
     // Direct Window postMessage Listener
     const handleWindowMessage = (e) => {
+      if (e.data?.type === 'CLOSE_PROJECTOR_WINDOW') {
+        if (typeof window !== 'undefined' && (window.location.hash === '#projector' || window.location.search.includes('projector=true'))) {
+          window.close();
+        }
+        return;
+      }
       if (e.data?.type === 'PROJECTOR_SYNC_STATE' && e.data.payload) {
         const payload = e.data.payload;
         if (payload.timestamp > lastTimestampRef.current) {
@@ -453,6 +471,25 @@ export function useProjectorSync() {
     }, 500);
   }, [state]);
 
+  const closeProjectorWindow = useCallback(() => {
+    // 1. Direct popup ref if held
+    if (popupRef.current && !popupRef.current.closed) {
+      try {
+        popupRef.current.close();
+      } catch (e) {}
+    }
+    // 2. BroadcastChannel
+    if (channelRef.current) {
+      try {
+        channelRef.current.postMessage({ type: 'CLOSE_PROJECTOR_WINDOW' });
+      } catch (e) {}
+    }
+    // 3. Storage trigger
+    try {
+      localStorage.setItem('ortho_close_projector_trigger', String(Date.now()));
+    } catch (e) {}
+  }, []);
+
   return {
     ...state,
     projectSlide,
@@ -468,6 +505,7 @@ export function useProjectorSync() {
     clearHighlights,
     setHighlightColor,
     setProjectorTheme,
-    openProjectorWindow
+    openProjectorWindow,
+    closeProjectorWindow
   };
 }

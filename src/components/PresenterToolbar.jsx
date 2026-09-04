@@ -3,7 +3,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   X, 
-  ExternalLink
+  ExternalLink,
+  MonitorOff
 } from 'lucide-react';
 import { translations } from '../lib/i18n';
 
@@ -17,6 +18,7 @@ export function PresenterToolbar({
   onToggleClear,
   onUnproject,
   onOpenProjectorWindow,
+  onCloseProjectorWindow,
   uiLang = 'ta'
 }) {
   const [activeClickId, setActiveClickId] = useState(null);
@@ -301,6 +303,36 @@ export function PresenterToolbar({
         >
           <ExternalLink size={15} />
         </button>
+
+        {/* Close 2nd Screen Window Button */}
+        {onCloseProjectorWindow && (
+          <button
+            type="button"
+            onClick={onCloseProjectorWindow}
+            onMouseDown={() => setActiveClickId('close-popout')}
+            onMouseUp={() => setActiveClickId(null)}
+            title={t.closeProjectorWindow || 'Close 2nd Screen Window'}
+            style={{
+              padding: '6px 8px',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              backgroundColor: 'rgba(239, 68, 68, 0.22)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#fca5a5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transform: activeClickId === 'close-popout' ? 'scale(0.92)' : 'scale(1)',
+              transition: 'transform 0.12s ease, background-color 0.15s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.5)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+          >
+            <MonitorOff size={15} />
+          </button>
+        )}
 
         {/* Stop / Unproject Button */}
         <button
