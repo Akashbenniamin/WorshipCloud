@@ -119,7 +119,26 @@ export const translations = {
     format12h: '12 மணி வடிவம்',
     format24h: '24 மணி வடிவம்',
     showSeconds: 'விநாடிகளை காட்டுக',
-    serviceTitle: 'ஆராதனை தலைப்பு'
+    serviceTitle: 'ஆராதனை தலைப்பு',
+
+    // Authentication & Profile
+    profile: 'சுயவிவரம் (Profile)',
+    signIn: 'உள்நுழைய (Sign In)',
+    signOut: 'வெளியேறு (Sign Out)',
+    continueWithGoogle: 'Google கணக்குடன் உள்நுழைக',
+    signInTitle: 'Worship Cloud-ல் உள்நுழையவும்',
+    signInSubtitle: 'உங்கள் பாடல் வரிசைகள், விருப்பங்கள், புக்மார்க்குகள் மற்றும் வண்ண அமைப்புகளை அனைத்து சாதனங்களிலும் ஒத்திசைக்கலாம்.',
+    cloudSyncActive: 'கிளவுட் ஒத்திசைவு இயக்கத்தில் உள்ளது',
+    signedInAs: 'உள்நுழைந்துள்ள கணக்கு',
+    accountType: 'கணக்கு வகை',
+    supabaseConfig: 'Supabase இணைப்பு அமைப்புகள்',
+    supabaseConfigSubtitle: 'உங்கள் இலவச Supabase திட்டத்தின் URL மற்றும் Anon Key-ஐ இங்கே உள்ளிடவும்',
+    supabaseUrl: 'Supabase Project URL',
+    supabaseAnonKey: 'Supabase Anon Key',
+    saveAndConnect: 'சேமித்து இணைக்க',
+    connected: 'இணைக்கப்பட்டுள்ளது',
+    notConnected: 'இணைக்கப்படவில்லை',
+    freeTierNotice: 'Supabase மற்றும் Google Login முற்றிலும் 100% இலவசம்!'
   },
   en: {
     brandName: 'Worship Cloud',
@@ -241,6 +260,25 @@ export const translations = {
     format12h: '12-Hour Format',
     format24h: '24-Hour Format',
     showSeconds: 'Show Seconds',
-    serviceTitle: 'Service / Church Title'
+    serviceTitle: 'Service / Church Title',
+
+    // Authentication & Profile
+    profile: 'Profile',
+    signIn: 'Sign In',
+    signOut: 'Sign Out',
+    continueWithGoogle: 'Continue with Google',
+    signInTitle: 'Sign In to Worship Cloud',
+    signInSubtitle: 'Sync your song setlists, favorites, bookmarks, and display preferences across all your devices.',
+    cloudSyncActive: 'Cloud Sync Active',
+    signedInAs: 'Signed in as',
+    accountType: 'Account Type',
+    supabaseConfig: 'Supabase Connection Settings',
+    supabaseConfigSubtitle: 'Enter your free Supabase project URL and anon public key',
+    supabaseUrl: 'Supabase Project URL',
+    supabaseAnonKey: 'Supabase Anon Key',
+    saveAndConnect: 'Save & Connect',
+    connected: 'Connected',
+    notConnected: 'Not Connected',
+    freeTierNotice: 'Supabase and Google Login are 100% Free!'
   }
 };

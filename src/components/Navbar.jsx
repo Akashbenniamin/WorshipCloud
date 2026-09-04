@@ -8,7 +8,8 @@ import {
   Wrench,
   Search, 
   Settings,
-  Cloud
+  Cloud,
+  User
 } from 'lucide-react';
 import { translations } from '../lib/i18n';
 
@@ -23,7 +24,9 @@ export function Navbar({
   activeSlide,
   onOpenProjector,
   uiLang = 'ta',
-  onOpenSettings
+  onOpenSettings,
+  user,
+  onOpenAuth
 }) {
   const t = translations[uiLang] || translations.ta;
 
@@ -456,6 +459,80 @@ export function Navbar({
               title={uiLang === 'ta' ? 'அமைப்புகள் & வண்ணத் தோற்றம் (Settings)' : 'Settings & Themes'}
             >
               <Settings size={16} />
+            </button>
+
+            {/* Integrated Profile / Sign-in Icon Button with Tooltip */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onOpenAuth) onOpenAuth();
+              }}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: user?.avatarUrl ? '50%' : '8px',
+                backgroundColor: 'var(--bg-canvas)',
+                border: user ? '1.5px solid var(--accent)' : '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: user ? 'var(--accent)' : 'var(--text-primary)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                position: 'relative',
+                overflow: 'visible',
+                padding: 0
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.08)';
+                e.currentTarget.style.borderColor = 'var(--accent)';
+                e.currentTarget.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.borderColor = user ? 'var(--accent)' : 'var(--border-subtle)';
+                e.currentTarget.style.color = user ? 'var(--accent)' : 'var(--text-primary)';
+              }}
+              title={
+                user
+                  ? `${user.fullName} (${user.email}) · ${uiLang === 'ta' ? 'சுயவிவரம்' : 'Profile'}`
+                  : (uiLang === 'ta' ? 'உள்நுழைக / சுயவிவரம் (Sign In / Profile)' : 'Sign In / Profile')
+              }
+            >
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : user ? (
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent)' }}>
+                  {user.fullName ? user.fullName[0].toUpperCase() : 'U'}
+                </div>
+              ) : (
+                <User size={16} />
+              )}
+              {/* Online Green Pulse Indicator when logged in */}
+              {user && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    width: '9px',
+                    height: '9px',
+                    backgroundColor: '#10b981',
+                    borderRadius: '50%',
+                    border: '1.5px solid var(--bg-surface)',
+                    boxShadow: '0 0 4px #10b981'
+                  }}
+                />
+              )}
             </button>
           </div>
         </div>

@@ -8,9 +8,11 @@ import { DailyVerseSection } from './components/DailyVerseSection';
 import { ToolsSection } from './components/ToolsSection';
 import { QuickSearchModal } from './components/QuickSearchModal';
 import { SettingsModal } from './components/SettingsModal';
+import { AuthModal } from './components/AuthModal';
 import { PresenterToolbar } from './components/PresenterToolbar';
 import { ProjectorDisplay } from './components/ProjectorDisplay';
 import { useProjectorSync } from './hooks/useProjectorSync';
+import { useAuth } from './hooks/useAuth';
 
 export function App() {
   // Check if this window is running as dedicated projector output (for 2nd monitor)
@@ -60,9 +62,13 @@ export function App() {
   const [fontSize, setFontSize] = useState(19);
   const [parallelMode, setParallelMode] = useState(false);
 
+  // Authentication & Supabase
+  const auth = useAuth();
+
   // Modals
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [selectedSongForViewer, setSelectedSongForViewer] = useState(null);
 
   // Apply theme to DOM
@@ -166,6 +172,8 @@ export function App() {
         onOpenProjector={projector.openProjectorWindow}
         uiLang={uiLang}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        user={auth.user}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -259,6 +267,14 @@ export function App() {
         setTheme={setTheme}
         fontSize={fontSize}
         setFontSize={setFontSize}
+      />
+
+      {/* Supabase & Google Auth Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        uiLang={uiLang}
+        auth={auth}
       />
     </div>
   );
