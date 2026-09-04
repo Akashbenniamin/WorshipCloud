@@ -2,6 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 const STORAGE_KEY = 'worship_cloud_supabase_config';
 
+export const DEFAULT_SUPABASE_URL = 'https://rvxegccyyjjptivotxag.supabase.co';
+export const DEFAULT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2eGVnY2N5eWpqcHRpdm90eGFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTU3MjgsImV4cCI6MjEwNDA5MTcyOH0.I5L1D5oF5Ow57758gD9XjGcge9dHB0DdSuho6nQE5Ww';
+
 let cachedClient = null;
 let currentConfigSig = '';
 
@@ -19,7 +23,7 @@ export function getSupabaseConfig() {
     };
   }
 
-  // Check localStorage
+  // Check localStorage override
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -35,6 +39,16 @@ export function getSupabaseConfig() {
     }
   } catch (err) {
     console.error('Failed to read Supabase config from localStorage:', err);
+  }
+
+  // Built-in project default credentials
+  if (DEFAULT_SUPABASE_URL && DEFAULT_SUPABASE_ANON_KEY) {
+    return {
+      url: DEFAULT_SUPABASE_URL,
+      anonKey: DEFAULT_SUPABASE_ANON_KEY,
+      isConfigured: true,
+      source: 'default'
+    };
   }
 
   return {
