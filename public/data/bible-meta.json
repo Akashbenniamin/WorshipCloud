@@ -1,0 +1,1327 @@
+[
+  {
+    "index": 0,
+    "code": "GEN",
+    "id": "GEN",
+    "name": "ஆதியாகமம்",
+    "english": "Genesis",
+    "testament": "OT",
+    "chapters": 50,
+    "verseCount": 1533,
+    "startPage": 1,
+    "aliases": [
+      "ஆதியாகமம்",
+      "GEN",
+      "Genesis",
+      "genesis",
+      "aathiyagamam",
+      "aadhiyagamam",
+      "gen"
+    ]
+  },
+  {
+    "index": 1,
+    "code": "EXO",
+    "id": "EXO",
+    "name": "யாத்திராகமம்",
+    "english": "Exodus",
+    "testament": "OT",
+    "chapters": 40,
+    "verseCount": 1213,
+    "startPage": 69,
+    "aliases": [
+      "யாத்திராகமம்",
+      "EXO",
+      "Exodus",
+      "exodus",
+      "yaathiragamam",
+      "yathiragamam",
+      "exo"
+    ]
+  },
+  {
+    "index": 2,
+    "code": "LEV",
+    "id": "LEV",
+    "name": "லேவியராகமம்",
+    "english": "Leviticus",
+    "testament": "OT",
+    "chapters": 27,
+    "verseCount": 859,
+    "startPage": 125,
+    "aliases": [
+      "லேவியராகமம்",
+      "LEV",
+      "Leviticus",
+      "leviticus",
+      "leviyaragamam",
+      "leviyaraagamam",
+      "lev"
+    ]
+  },
+  {
+    "index": 3,
+    "code": "NUM",
+    "id": "NUM",
+    "name": "எண்ணாகமம்",
+    "english": "Numbers",
+    "testament": "OT",
+    "chapters": 36,
+    "verseCount": 1288,
+    "startPage": 165,
+    "aliases": [
+      "எண்ணாகமம்",
+      "NUM",
+      "Numbers",
+      "numbers",
+      "ennagamam",
+      "ennagaamam",
+      "num"
+    ]
+  },
+  {
+    "index": 4,
+    "code": "DEU",
+    "id": "DEU",
+    "name": "உபாகமம்",
+    "english": "Deuteronomy",
+    "testament": "OT",
+    "chapters": 34,
+    "verseCount": 959,
+    "startPage": 222,
+    "aliases": [
+      "உபாகமம்",
+      "DEU",
+      "Deuteronomy",
+      "deuteronomy",
+      "ubagamam",
+      "ubaagamam",
+      "deu"
+    ]
+  },
+  {
+    "index": 5,
+    "code": "JOS",
+    "id": "JOS",
+    "name": "யோசுவா",
+    "english": "Joshua",
+    "testament": "OT",
+    "chapters": 24,
+    "verseCount": 658,
+    "startPage": 269,
+    "aliases": [
+      "யோசுவா",
+      "JOS",
+      "Joshua",
+      "joshua",
+      "yosuvaa",
+      "yosuva",
+      "jos"
+    ]
+  },
+  {
+    "index": 6,
+    "code": "JDG",
+    "id": "JDG",
+    "name": "நியாயாதிபதிகள்",
+    "english": "Judges",
+    "testament": "OT",
+    "chapters": 21,
+    "verseCount": 618,
+    "startPage": 301,
+    "aliases": [
+      "நியாயாதிபதிகள்",
+      "JDG",
+      "Judges",
+      "judges",
+      "niyayadhibathigal",
+      "niyayadhipathigal",
+      "jdg"
+    ]
+  },
+  {
+    "index": 7,
+    "code": "RUT",
+    "id": "RUT",
+    "name": "ரூத்",
+    "english": "Ruth",
+    "testament": "OT",
+    "chapters": 4,
+    "verseCount": 85,
+    "startPage": 334,
+    "aliases": [
+      "ரூத்",
+      "RUT",
+      "Ruth",
+      "ruth",
+      "rooth",
+      "ruththu",
+      "rut"
+    ]
+  },
+  {
+    "index": 8,
+    "code": "1SA",
+    "id": "1SA",
+    "name": "1 சாமுவேல்",
+    "english": "1 Samuel",
+    "testament": "OT",
+    "chapters": 31,
+    "verseCount": 811,
+    "startPage": 339,
+    "aliases": [
+      "1 சாமுவேல்",
+      "1SA",
+      "1 Samuel",
+      "1 samuel",
+      "first samuel",
+      "mudhal saamuel",
+      "mudhal samuel",
+      "1sa"
+    ]
+  },
+  {
+    "index": 9,
+    "code": "2SA",
+    "id": "2SA",
+    "name": "2 சாமுவேல்",
+    "english": "2 Samuel",
+    "testament": "OT",
+    "chapters": 24,
+    "verseCount": 695,
+    "startPage": 384,
+    "aliases": [
+      "2 சாமுவேல்",
+      "2SA",
+      "2 Samuel",
+      "2 samuel",
+      "second samuel",
+      "irandaam saamuel",
+      "irandaam samuel",
+      "2sa"
+    ]
+  },
+  {
+    "index": 10,
+    "code": "1KI",
+    "id": "1KI",
+    "name": "1 இராஜாக்கள்",
+    "english": "1 Kings",
+    "testament": "OT",
+    "chapters": 22,
+    "verseCount": 816,
+    "startPage": 421,
+    "aliases": [
+      "1 இராஜாக்கள்",
+      "1KI",
+      "1 Kings",
+      "1 kings",
+      "first kings",
+      "mudhal raajaakkal",
+      "mudhal rajakkal",
+      "1ki"
+    ]
+  },
+  {
+    "index": 11,
+    "code": "2KI",
+    "id": "2KI",
+    "name": "2 இராஜாக்கள்",
+    "english": "2 Kings",
+    "testament": "OT",
+    "chapters": 25,
+    "verseCount": 719,
+    "startPage": 464,
+    "aliases": [
+      "2 இராஜாக்கள்",
+      "2KI",
+      "2 Kings",
+      "2 kings",
+      "second kings",
+      "irandaam raajaakkal",
+      "irandaam rajakkal",
+      "2ki"
+    ]
+  },
+  {
+    "index": 12,
+    "code": "1CH",
+    "id": "1CH",
+    "name": "1 நாளாகமம்",
+    "english": "1 Chronicles",
+    "testament": "OT",
+    "chapters": 29,
+    "verseCount": 942,
+    "startPage": 505,
+    "aliases": [
+      "1 நாளாகமம்",
+      "1CH",
+      "1 Chronicles",
+      "1 chronicles",
+      "first chronicles",
+      "mudhal naalaagamam",
+      "1ch"
+    ]
+  },
+  {
+    "index": 13,
+    "code": "2CH",
+    "id": "2CH",
+    "name": "2 நாளாகமம்",
+    "english": "2 Chronicles",
+    "testament": "OT",
+    "chapters": 36,
+    "verseCount": 822,
+    "startPage": 543,
+    "aliases": [
+      "2 நாளாகமம்",
+      "2CH",
+      "2 Chronicles",
+      "2 chronicles",
+      "second chronicles",
+      "irandaam naalaagamam",
+      "2ch"
+    ]
+  },
+  {
+    "index": 14,
+    "code": "EZR",
+    "id": "EZR",
+    "name": "எஸ்றா",
+    "english": "Ezra",
+    "testament": "OT",
+    "chapters": 10,
+    "verseCount": 280,
+    "startPage": 589,
+    "aliases": [
+      "எஸ்றா",
+      "EZR",
+      "Ezra",
+      "ezra",
+      "esraa",
+      "ezr"
+    ]
+  },
+  {
+    "index": 15,
+    "code": "NEH",
+    "id": "NEH",
+    "name": "நெகேமியா",
+    "english": "Nehemiah",
+    "testament": "OT",
+    "chapters": 13,
+    "verseCount": 406,
+    "startPage": 603,
+    "aliases": [
+      "நெகேமியா",
+      "NEH",
+      "Nehemiah",
+      "nehemiah",
+      "nehemiya",
+      "nehemiyaa",
+      "neh"
+    ]
+  },
+  {
+    "index": 16,
+    "code": "EST",
+    "id": "EST",
+    "name": "எஸ்தர்",
+    "english": "Esther",
+    "testament": "OT",
+    "chapters": 10,
+    "verseCount": 167,
+    "startPage": 623,
+    "aliases": [
+      "எஸ்தர்",
+      "EST",
+      "Esther",
+      "esther",
+      "esthar",
+      "est"
+    ]
+  },
+  {
+    "index": 17,
+    "code": "JOB",
+    "id": "JOB",
+    "name": "யோபு",
+    "english": "Job",
+    "testament": "OT",
+    "chapters": 42,
+    "verseCount": 1070,
+    "startPage": 634,
+    "aliases": [
+      "யோபு",
+      "JOB",
+      "Job",
+      "job",
+      "yobu"
+    ]
+  },
+  {
+    "index": 18,
+    "code": "PSA",
+    "id": "PSA",
+    "name": "சங்கீதம்",
+    "english": "Psalms",
+    "testament": "OT",
+    "chapters": 150,
+    "verseCount": 2461,
+    "startPage": 671,
+    "aliases": [
+      "சங்கீதம்",
+      "PSA",
+      "Psalms",
+      "psalms",
+      "psalm",
+      "sangeetham",
+      "sangeedham",
+      "sangeethangal",
+      "keerthanai",
+      "psa"
+    ]
+  },
+  {
+    "index": 19,
+    "code": "PRO",
+    "id": "PRO",
+    "name": "நீதிமொழிகள்",
+    "english": "Proverbs",
+    "testament": "OT",
+    "chapters": 31,
+    "verseCount": 915,
+    "startPage": 763,
+    "aliases": [
+      "நீதிமொழிகள்",
+      "PRO",
+      "Proverbs",
+      "proverbs",
+      "neethimozhigal",
+      "neethi mozhigal",
+      "gnana mozhigal",
+      "pro"
+    ]
+  },
+  {
+    "index": 20,
+    "code": "ECC",
+    "id": "ECC",
+    "name": "பிரசங்கி",
+    "english": "Ecclesiastes",
+    "testament": "OT",
+    "chapters": 12,
+    "verseCount": 222,
+    "startPage": 791,
+    "aliases": [
+      "பிரசங்கி",
+      "ECC",
+      "Ecclesiastes",
+      "ecclesiastes",
+      "prasangi",
+      "prasanggi",
+      "ecc"
+    ]
+  },
+  {
+    "index": 21,
+    "code": "SNG",
+    "id": "SNG",
+    "name": "உன்னதப்பாட்டு",
+    "english": "Song of Solomon",
+    "testament": "OT",
+    "chapters": 8,
+    "verseCount": 118,
+    "startPage": 801,
+    "aliases": [
+      "உன்னதப்பாட்டு",
+      "SNG",
+      "Song of Solomon",
+      "song of songs",
+      "song of solomon",
+      "unnathappaattu",
+      "unnatha paattu",
+      "sng",
+      "sos"
+    ]
+  },
+  {
+    "index": 22,
+    "code": "ISA",
+    "id": "ISA",
+    "name": "ஏசாயா",
+    "english": "Isaiah",
+    "testament": "OT",
+    "chapters": 66,
+    "verseCount": 1292,
+    "startPage": 806,
+    "aliases": [
+      "ஏசாயா",
+      "ISA",
+      "Isaiah",
+      "isaiah",
+      "yesaaya",
+      "esaaya",
+      "esaayaa",
+      "isa"
+    ]
+  },
+  {
+    "index": 23,
+    "code": "JER",
+    "id": "JER",
+    "name": "எரேமியா",
+    "english": "Jeremiah",
+    "testament": "OT",
+    "chapters": 52,
+    "verseCount": 1364,
+    "startPage": 873,
+    "aliases": [
+      "எரேமியா",
+      "JER",
+      "Jeremiah",
+      "jeremiah",
+      "eremiya",
+      "eremiyaa",
+      "jer"
+    ]
+  },
+  {
+    "index": 24,
+    "code": "LAM",
+    "id": "LAM",
+    "name": "புலம்பல்",
+    "english": "Lamentations",
+    "testament": "OT",
+    "chapters": 5,
+    "verseCount": 154,
+    "startPage": 952,
+    "aliases": [
+      "புலம்பல்",
+      "LAM",
+      "Lamentations",
+      "lamentations",
+      "pulambal",
+      "pulambalgal",
+      "lam"
+    ]
+  },
+  {
+    "index": 25,
+    "code": "EZK",
+    "id": "EZK",
+    "name": "எசேக்கியேல்",
+    "english": "Ezekiel",
+    "testament": "OT",
+    "chapters": 48,
+    "verseCount": 1273,
+    "startPage": 958,
+    "aliases": [
+      "எசேக்கியேல்",
+      "EZK",
+      "Ezekiel",
+      "ezekiel",
+      "esechiyel",
+      "yesekkiyel",
+      "ezk"
+    ]
+  },
+  {
+    "index": 26,
+    "code": "DAN",
+    "id": "DAN",
+    "name": "தானியேல்",
+    "english": "Daniel",
+    "testament": "OT",
+    "chapters": 12,
+    "verseCount": 357,
+    "startPage": 1028,
+    "aliases": [
+      "தானியேல்",
+      "DAN",
+      "Daniel",
+      "daniel",
+      "thaaniyel",
+      "dhaniel",
+      "dan"
+    ]
+  },
+  {
+    "index": 27,
+    "code": "HOS",
+    "id": "HOS",
+    "name": "ஓசியா",
+    "english": "Hosea",
+    "testament": "OT",
+    "chapters": 14,
+    "verseCount": 197,
+    "startPage": 1049,
+    "aliases": [
+      "ஓசியா",
+      "HOS",
+      "Hosea",
+      "hosea",
+      "oseya",
+      "hoseyaa",
+      "hos"
+    ]
+  },
+  {
+    "index": 28,
+    "code": "JOL",
+    "id": "JOL",
+    "name": "யோவேல்",
+    "english": "Joel",
+    "testament": "OT",
+    "chapters": 3,
+    "verseCount": 73,
+    "startPage": 1059,
+    "aliases": [
+      "யோவேல்",
+      "JOL",
+      "Joel",
+      "joel",
+      "yovel",
+      "yoel",
+      "jol"
+    ]
+  },
+  {
+    "index": 29,
+    "code": "AMO",
+    "id": "AMO",
+    "name": "ஆமோஸ்",
+    "english": "Amos",
+    "testament": "OT",
+    "chapters": 9,
+    "verseCount": 146,
+    "startPage": 1063,
+    "aliases": [
+      "ஆமோஸ்",
+      "AMO",
+      "Amos",
+      "amos",
+      "aamos",
+      "amo"
+    ]
+  },
+  {
+    "index": 30,
+    "code": "OBA",
+    "id": "OBA",
+    "name": "ஒபதியா",
+    "english": "Obadiah",
+    "testament": "OT",
+    "chapters": 1,
+    "verseCount": 21,
+    "startPage": 1071,
+    "aliases": [
+      "ஒபதியா",
+      "OBA",
+      "Obadiah",
+      "obadiah",
+      "obadhiya",
+      "obathiya",
+      "oba"
+    ]
+  },
+  {
+    "index": 31,
+    "code": "JON",
+    "id": "JON",
+    "name": "யோனா",
+    "english": "Jonah",
+    "testament": "OT",
+    "chapters": 4,
+    "verseCount": 48,
+    "startPage": 1072,
+    "aliases": [
+      "யோனா",
+      "JON",
+      "Jonah",
+      "jonah",
+      "yona",
+      "yonah",
+      "jon"
+    ]
+  },
+  {
+    "index": 32,
+    "code": "MIC",
+    "id": "MIC",
+    "name": "மீகா",
+    "english": "Micah",
+    "testament": "OT",
+    "chapters": 7,
+    "verseCount": 105,
+    "startPage": 1075,
+    "aliases": [
+      "மீகா",
+      "MIC",
+      "Micah",
+      "micah",
+      "meekaa",
+      "mika",
+      "mic"
+    ]
+  },
+  {
+    "index": 33,
+    "code": "NAM",
+    "id": "NAM",
+    "name": "நாகூம்",
+    "english": "Nahum",
+    "testament": "OT",
+    "chapters": 3,
+    "verseCount": 47,
+    "startPage": 1081,
+    "aliases": [
+      "நாகூம்",
+      "NAM",
+      "Nahum",
+      "nahum",
+      "naahum",
+      "naagum",
+      "nam"
+    ]
+  },
+  {
+    "index": 34,
+    "code": "HAB",
+    "id": "HAB",
+    "name": "ஆபகூக்",
+    "english": "Habakkuk",
+    "testament": "OT",
+    "chapters": 3,
+    "verseCount": 57,
+    "startPage": 1083,
+    "aliases": [
+      "ஆபகூக்",
+      "HAB",
+      "Habakkuk",
+      "habakkuk",
+      "aabakkuk",
+      "abakuk",
+      "hab"
+    ]
+  },
+  {
+    "index": 35,
+    "code": "ZEP",
+    "id": "ZEP",
+    "name": "செப்பனியா",
+    "english": "Zephaniah",
+    "testament": "OT",
+    "chapters": 3,
+    "verseCount": 53,
+    "startPage": 1086,
+    "aliases": [
+      "செப்பனியா",
+      "ZEP",
+      "Zephaniah",
+      "zephaniah",
+      "seppaniya",
+      "seppaniyaa",
+      "zep"
+    ]
+  },
+  {
+    "index": 36,
+    "code": "HAG",
+    "id": "HAG",
+    "name": "ஆகாய்",
+    "english": "Haggai",
+    "testament": "OT",
+    "chapters": 2,
+    "verseCount": 38,
+    "startPage": 1089,
+    "aliases": [
+      "ஆகாய்",
+      "HAG",
+      "Haggai",
+      "haggai",
+      "aagaai",
+      "aagai",
+      "hag"
+    ]
+  },
+  {
+    "index": 37,
+    "code": "ZEC",
+    "id": "ZEC",
+    "name": "சகரியா",
+    "english": "Zechariah",
+    "testament": "OT",
+    "chapters": 14,
+    "verseCount": 211,
+    "startPage": 1092,
+    "aliases": [
+      "சகரியா",
+      "ZEC",
+      "Zechariah",
+      "zechariah",
+      "sagariya",
+      "zec"
+    ]
+  },
+  {
+    "index": 38,
+    "code": "MAL",
+    "id": "MAL",
+    "name": "மல்கியா",
+    "english": "Malachi",
+    "testament": "OT",
+    "chapters": 4,
+    "verseCount": 55,
+    "startPage": 1103,
+    "aliases": [
+      "மல்கியா",
+      "MAL",
+      "Malachi",
+      "malachi",
+      "malaki",
+      "malachiya",
+      "mal"
+    ]
+  },
+  {
+    "index": 39,
+    "code": "MAT",
+    "id": "MAT",
+    "name": "மத்தேயு",
+    "english": "Matthew",
+    "testament": "NT",
+    "chapters": 28,
+    "verseCount": 1071,
+    "startPage": 3,
+    "aliases": [
+      "மத்தேயு",
+      "MAT",
+      "Matthew",
+      "matthew",
+      "matthaaeyu",
+      "mattheyu",
+      "maththai",
+      "mat"
+    ]
+  },
+  {
+    "index": 40,
+    "code": "MRK",
+    "id": "MRK",
+    "name": "மாற்கு",
+    "english": "Mark",
+    "testament": "NT",
+    "chapters": 16,
+    "verseCount": 678,
+    "startPage": 47,
+    "aliases": [
+      "மாற்கு",
+      "MRK",
+      "Mark",
+      "mark",
+      "maarku",
+      "maark",
+      "marku",
+      "mrk"
+    ]
+  },
+  {
+    "index": 41,
+    "code": "LUK",
+    "id": "LUK",
+    "name": "லூக்கா",
+    "english": "Luke",
+    "testament": "NT",
+    "chapters": 24,
+    "verseCount": 1151,
+    "startPage": 75,
+    "aliases": [
+      "லூக்கா",
+      "LUK",
+      "Luke",
+      "luke",
+      "lookkaa",
+      "luka",
+      "luk"
+    ]
+  },
+  {
+    "index": 42,
+    "code": "JHN",
+    "id": "JHN",
+    "name": "யோவான்",
+    "english": "John",
+    "testament": "NT",
+    "chapters": 21,
+    "verseCount": 879,
+    "startPage": 124,
+    "aliases": [
+      "யோவான்",
+      "JHN",
+      "John",
+      "john",
+      "yovaan",
+      "yohannaan",
+      "yohannan",
+      "jhn"
+    ]
+  },
+  {
+    "index": 43,
+    "code": "ACT",
+    "id": "ACT",
+    "name": "அப்போஸ்தலருடைய நடபடிகள்",
+    "english": "Acts",
+    "testament": "NT",
+    "chapters": 28,
+    "verseCount": 1007,
+    "startPage": 160,
+    "aliases": [
+      "அப்போஸ்தலருடைய நடபடிகள்",
+      "ACT",
+      "Acts",
+      "acts",
+      "apposthalar",
+      "apposthalargal",
+      "seyalgal",
+      "act"
+    ]
+  },
+  {
+    "index": 44,
+    "code": "ROM",
+    "id": "ROM",
+    "name": "ரோமர்",
+    "english": "Romans",
+    "testament": "NT",
+    "chapters": 16,
+    "verseCount": 433,
+    "startPage": 207,
+    "aliases": [
+      "ரோமர்",
+      "ROM",
+      "Romans",
+      "romans",
+      "romar",
+      "rom"
+    ]
+  },
+  {
+    "index": 45,
+    "code": "1CO",
+    "id": "1CO",
+    "name": "1 கொரிந்தியர்",
+    "english": "1 Corinthians",
+    "testament": "NT",
+    "chapters": 16,
+    "verseCount": 437,
+    "startPage": 226,
+    "aliases": [
+      "1 கொரிந்தியர்",
+      "1CO",
+      "1 Corinthians",
+      "1 corinthians",
+      "first corinthians",
+      "mudhal korindhiyar",
+      "1co"
+    ]
+  },
+  {
+    "index": 46,
+    "code": "2CO",
+    "id": "2CO",
+    "name": "2 கொரிந்தியர்",
+    "english": "2 Corinthians",
+    "testament": "NT",
+    "chapters": 13,
+    "verseCount": 257,
+    "startPage": 245,
+    "aliases": [
+      "2 கொரிந்தியர்",
+      "2CO",
+      "2 Corinthians",
+      "2 corinthians",
+      "second corinthians",
+      "irandaam korindhiyar",
+      "2co"
+    ]
+  },
+  {
+    "index": 47,
+    "code": "GAL",
+    "id": "GAL",
+    "name": "கலாத்தியர்",
+    "english": "Galatians",
+    "testament": "NT",
+    "chapters": 6,
+    "verseCount": 149,
+    "startPage": 257,
+    "aliases": [
+      "கலாத்தியர்",
+      "GAL",
+      "Galatians",
+      "galatians",
+      "galathiyar",
+      "gal"
+    ]
+  },
+  {
+    "index": 48,
+    "code": "EPH",
+    "id": "EPH",
+    "name": "எபேசியர்",
+    "english": "Ephesians",
+    "testament": "NT",
+    "chapters": 6,
+    "verseCount": 155,
+    "startPage": 263,
+    "aliases": [
+      "எபேசியர்",
+      "EPH",
+      "Ephesians",
+      "ephesians",
+      "ebesiyar",
+      "eph"
+    ]
+  },
+  {
+    "index": 49,
+    "code": "PHP",
+    "id": "PHP",
+    "name": "பிலிப்பியர்",
+    "english": "Philippians",
+    "testament": "NT",
+    "chapters": 4,
+    "verseCount": 104,
+    "startPage": 270,
+    "aliases": [
+      "பிலிப்பியர்",
+      "PHP",
+      "Philippians",
+      "philippians",
+      "pilippiyar",
+      "php"
+    ]
+  },
+  {
+    "index": 50,
+    "code": "COL",
+    "id": "COL",
+    "name": "கொலோசெயர்",
+    "english": "Colossians",
+    "testament": "NT",
+    "chapters": 4,
+    "verseCount": 95,
+    "startPage": 274,
+    "aliases": [
+      "கொலோசெயர்",
+      "COL",
+      "Colossians",
+      "colossians",
+      "koloseyar",
+      "col"
+    ]
+  },
+  {
+    "index": 51,
+    "code": "1TH",
+    "id": "1TH",
+    "name": "1 தெசலோனிக்கேயர்",
+    "english": "1 Thessalonians",
+    "testament": "NT",
+    "chapters": 5,
+    "verseCount": 89,
+    "startPage": 279,
+    "aliases": [
+      "1 தெசலோனிக்கேயர்",
+      "1TH",
+      "1 Thessalonians",
+      "1 thessalonians",
+      "first thessalonians",
+      "mudhal thesalonikkayar",
+      "1th"
+    ]
+  },
+  {
+    "index": 52,
+    "code": "2TH",
+    "id": "2TH",
+    "name": "2 தெசலோனிக்கேயர்",
+    "english": "2 Thessalonians",
+    "testament": "NT",
+    "chapters": 3,
+    "verseCount": 47,
+    "startPage": 283,
+    "aliases": [
+      "2 தெசலோனிக்கேயர்",
+      "2TH",
+      "2 Thessalonians",
+      "2 thessalonians",
+      "second thessalonians",
+      "irandaam thesalonikkayar",
+      "2th"
+    ]
+  },
+  {
+    "index": 53,
+    "code": "1TI",
+    "id": "1TI",
+    "name": "1 தீமோத்தேயு",
+    "english": "1 Timothy",
+    "testament": "NT",
+    "chapters": 6,
+    "verseCount": 113,
+    "startPage": 285,
+    "aliases": [
+      "1 தீமோத்தேயு",
+      "1TI",
+      "1 Timothy",
+      "1 timothy",
+      "first timothy",
+      "mudhal theemothi",
+      "1ti"
+    ]
+  },
+  {
+    "index": 54,
+    "code": "2TI",
+    "id": "2TI",
+    "name": "2 தீமோத்தேயு",
+    "english": "2 Timothy",
+    "testament": "NT",
+    "chapters": 4,
+    "verseCount": 83,
+    "startPage": 291,
+    "aliases": [
+      "2 தீமோத்தேயு",
+      "2TI",
+      "2 Timothy",
+      "2 timothy",
+      "second timothy",
+      "irandaam theemothi",
+      "2ti"
+    ]
+  },
+  {
+    "index": 55,
+    "code": "TIT",
+    "id": "TIT",
+    "name": "தீத்து",
+    "english": "Titus",
+    "testament": "NT",
+    "chapters": 3,
+    "verseCount": 46,
+    "startPage": 294,
+    "aliases": [
+      "தீத்து",
+      "TIT",
+      "Titus",
+      "titus",
+      "theethu",
+      "theeththu",
+      "tit"
+    ]
+  },
+  {
+    "index": 56,
+    "code": "PHM",
+    "id": "PHM",
+    "name": "பிலேமோன்",
+    "english": "Philemon",
+    "testament": "NT",
+    "chapters": 1,
+    "verseCount": 25,
+    "startPage": 297,
+    "aliases": [
+      "பிலேமோன்",
+      "PHM",
+      "Philemon",
+      "philemon",
+      "pilemon",
+      "phm"
+    ]
+  },
+  {
+    "index": 57,
+    "code": "HEB",
+    "id": "HEB",
+    "name": "எபிரெயர்",
+    "english": "Hebrews",
+    "testament": "NT",
+    "chapters": 13,
+    "verseCount": 303,
+    "startPage": 298,
+    "aliases": [
+      "எபிரெயர்",
+      "HEB",
+      "Hebrews",
+      "hebrews",
+      "ebireyar",
+      "heb"
+    ]
+  },
+  {
+    "index": 58,
+    "code": "JAS",
+    "id": "JAS",
+    "name": "யாக்கோபு",
+    "english": "James",
+    "testament": "NT",
+    "chapters": 5,
+    "verseCount": 108,
+    "startPage": 312,
+    "aliases": [
+      "யாக்கோபு",
+      "JAS",
+      "James",
+      "james",
+      "yaakkobu",
+      "yaakobu",
+      "jas"
+    ]
+  },
+  {
+    "index": 59,
+    "code": "1PE",
+    "id": "1PE",
+    "name": "1 பேதுரு",
+    "english": "1 Peter",
+    "testament": "NT",
+    "chapters": 5,
+    "verseCount": 105,
+    "startPage": 317,
+    "aliases": [
+      "1 பேதுரு",
+      "1PE",
+      "1 Peter",
+      "1 peter",
+      "first peter",
+      "mudhal peter",
+      "mudhal pedhuru",
+      "1pe"
+    ]
+  },
+  {
+    "index": 60,
+    "code": "2PE",
+    "id": "2PE",
+    "name": "2 பேதுரு",
+    "english": "2 Peter",
+    "testament": "NT",
+    "chapters": 3,
+    "verseCount": 61,
+    "startPage": 322,
+    "aliases": [
+      "2 பேதுரு",
+      "2PE",
+      "2 Peter",
+      "2 peter",
+      "second peter",
+      "irandaam peter",
+      "irandaam pedhuru",
+      "2pe"
+    ]
+  },
+  {
+    "index": 61,
+    "code": "1JN",
+    "id": "1JN",
+    "name": "1 யோவான்",
+    "english": "1 John",
+    "testament": "NT",
+    "chapters": 5,
+    "verseCount": 105,
+    "startPage": 325,
+    "aliases": [
+      "1 யோவான்",
+      "1JN",
+      "1 John",
+      "1 john",
+      "first john",
+      "mudhal yovaan",
+      "1jn"
+    ]
+  },
+  {
+    "index": 62,
+    "code": "2JN",
+    "id": "2JN",
+    "name": "2 யோவான்",
+    "english": "2 John",
+    "testament": "NT",
+    "chapters": 1,
+    "verseCount": 13,
+    "startPage": 330,
+    "aliases": [
+      "2 யோவான்",
+      "2JN",
+      "2 John",
+      "2 john",
+      "second john",
+      "irandaam yovaan",
+      "2jn"
+    ]
+  },
+  {
+    "index": 63,
+    "code": "3JN",
+    "id": "3JN",
+    "name": "3 யோவான்",
+    "english": "3 John",
+    "testament": "NT",
+    "chapters": 1,
+    "verseCount": 14,
+    "startPage": 331,
+    "aliases": [
+      "3 யோவான்",
+      "3JN",
+      "3 John",
+      "3 john",
+      "third john",
+      "moondraam yovaan",
+      "3jn"
+    ]
+  },
+  {
+    "index": 64,
+    "code": "JUD",
+    "id": "JUD",
+    "name": "யூதா",
+    "english": "Jude",
+    "testament": "NT",
+    "chapters": 1,
+    "verseCount": 25,
+    "startPage": 332,
+    "aliases": [
+      "யூதா",
+      "JUD",
+      "Jude",
+      "jude",
+      "yoodhaa",
+      "yootha",
+      "jud"
+    ]
+  },
+  {
+    "index": 65,
+    "code": "REV",
+    "id": "REV",
+    "name": "வெளிப்படுத்தின விசேஷம்",
+    "english": "Revelation",
+    "testament": "NT",
+    "chapters": 22,
+    "verseCount": 404,
+    "startPage": 333,
+    "aliases": [
+      "வெளிப்படுத்தின விசேஷம்",
+      "REV",
+      "Revelation",
+      "revelation",
+      "velippaduthal",
+      "velippaduthina visesham",
+      "velippaduthal visesham",
+      "rev"
+    ]
+  }
+]

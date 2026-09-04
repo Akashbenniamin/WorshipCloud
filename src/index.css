@@ -1,0 +1,267 @@
+@import url('https://fonts.googleapis.com/css2?family=Arima+Madurai:wght@400;700&family=Catamaran:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Kavivanar&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Mukta+Malar:wght@400;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700;800&family=Noto+Serif+Tamil:wght@400;600;700&display=swap');
+
+@font-face {
+  font-family: 'Okine';
+  src: url('/fonts/MADEOkineSansPERSONALUSE-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Okine';
+  src: url('/fonts/MADEOkineSansPERSONALUSE-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Okine';
+  src: url('/fonts/MADEOkineSansPERSONALUSE-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Malibu Sunday';
+  src: url('/fonts/Malibu Sunday Serif.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Badrock';
+  src: url('/fonts/Badrock.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'OkineOutline';
+  src: url('/fonts/MADEOkineSansPERSONALUSE-BlackOutline.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Talina';
+  src: url('/fonts/Talina.otf') format('opentype'),
+       url('/fonts/Talina.otf') format('truetype'),
+       url('/fonts/Talina.otf');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Tamil Unicode Font (X:\Fonts\Tamil Unicode Fonts) */
+@font-face { font-family: 'TAMIL-UNI031'; src: url('/fonts/tamil-unicode/TAMIL-UNI031.ttf') format('truetype'); font-display: swap; }
+
+:root {
+  --font-body: 'Noto Sans Tamil', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Lora', 'Noto Sans Tamil', Georgia, serif;
+  --font-tamil: 'Noto Sans Tamil', sans-serif;
+  --font-okine: 'Okine', 'Noto Sans Tamil', sans-serif;
+  --font-okine-outline: 'OkineOutline', sans-serif;
+  --font-malibu: 'Malibu Sunday', 'Lora', serif;
+  --font-badrock: 'Badrock', 'Noto Sans Tamil', sans-serif;
+  --font-talina: 'Talina', 'Lora', serif;
+
+  /* Default Theme: Warm Parchment */
+  --bg-canvas: #fcfaf6;
+  --bg-surface: #f5f0e6;
+  --bg-surface-hover: #ede4d5;
+  --bg-elevated: #ffffff;
+  --border-subtle: #ebdcca;
+  --border-strong: #d9c8b0;
+  --text-primary: #2a2521;
+  --text-secondary: #63584e;
+  --text-tertiary: #96887b;
+  --accent: #b37326;
+  --accent-light: #fef5e7;
+  --accent-hover: #9c6019;
+  --accent-contrast: #ffffff;
+  --live-badge-bg: #e65100;
+  --live-glow: rgba(179, 115, 38, 0.3);
+  --page-tag-bg: #ebdcc9;
+  --page-tag-text: #6d5d4d;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(42, 37, 33, 0.08);
+  --shadow-lg: 0 10px 25px rgba(42, 37, 33, 0.12);
+}
+
+[data-theme="midnight"] {
+  --bg-canvas: #090d14;
+  --bg-surface: #121824;
+  --bg-surface-hover: #1b2333;
+  --bg-elevated: #161e2e;
+  --border-subtle: #202b3d;
+  --border-strong: #2f3e57;
+  --text-primary: #f0f4fc;
+  --text-secondary: #9cb0d0;
+  --text-tertiary: #6b7f9e;
+  --accent: #e5b965;
+  --accent-light: #252013;
+  --accent-hover: #f3ce85;
+  --accent-contrast: #0d1117;
+  --live-badge-bg: #ff6d00;
+  --live-glow: rgba(229, 185, 101, 0.4);
+  --page-tag-bg: #1c2638;
+  --page-tag-text: #abbcd7;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="pristine"] {
+  --bg-canvas: #ffffff;
+  --bg-surface: #f8fafc;
+  --bg-surface-hover: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --accent-hover: #1d4ed8;
+  --accent-contrast: #ffffff;
+  --live-badge-bg: #dc2626;
+  --live-glow: rgba(37, 99, 235, 0.3);
+  --page-tag-bg: #f1f5f9;
+  --page-tag-text: #475569;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.65;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Buttons and Interactive Elements */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* Utility Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--live-glow); }
+  50% { box-shadow: 0 0 0 8px var(--live-glow); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.live-projecting {
+  outline: 2px solid var(--accent);
+  background-color: var(--accent-light) !important;
+  box-shadow: 0 0 16px var(--live-glow);
+  position: relative;
+}
+
+.live-projecting::after {
+  content: 'LIVE';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: var(--live-badge-bg);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  animation: pulseGlow 2s infinite;
+}
+
+/* Print page marker */
+.print-page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--page-tag-text);
+  background-color: var(--page-tag-bg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+/* Subtle Animated Clouds */
+@keyframes floatCloudLeft {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(28px, -16px, 0) scale(1.03);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes floatCloudRight {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-32px, 14px, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes floatCloudCenter {
+  0% {
+    transform: translate(-50%, -50%) translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) translate3d(22px, -14px, 0) scale(1.05);
+  }
+  100% {
+    transform: translate(-50%, -50%) translate3d(0, 0, 0) scale(1);
+  }
+}
