@@ -97,7 +97,16 @@ export function AuthModal({
       setActionLoading(true);
       await signInWithGoogle();
     } catch (err) {
-      setActionError(err.message || 'Google sign-in failed');
+      const errMsg = err?.message || String(err);
+      if (errMsg.toLowerCase().includes('provider is not enabled') || errMsg.toLowerCase().includes('unsupported provider')) {
+        setActionError(
+          uiLang === 'ta'
+            ? 'உங்கள் Supabase திட்டத்தில் Google provider இன்னும் இயக்கப்படவில்லை. Authentication > Providers > Google-ல் சென்று இயக்கவும்.'
+            : 'Google login provider is not enabled yet in your Supabase project. Please enable it under Authentication > Providers > Google.'
+        );
+      } else {
+        setActionError(errMsg || 'Google sign-in failed');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -113,6 +122,11 @@ export function AuthModal({
       setActionLoading(false);
     }
   };
+
+  const projectRef = (config.url || inputUrl || '').replace(/^https?:\/\//, '').split('.')[0];
+  const activeErrMsg = actionError || error || '';
+  const isProviderDisabled = activeErrMsg.toLowerCase().includes('provider is not enabled') ||
+    activeErrMsg.toLowerCase().includes('unsupported provider');
 
   return (
     <div
@@ -204,22 +218,48 @@ export function AuthModal({
         <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
           {/* Error Banner */}
-          {(actionError || error) && (
+          {activeErrMsg && (
             <div
               style={{
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
+                padding: '0.85rem 1rem',
+                borderRadius: '10px',
                 backgroundColor: 'rgba(239, 68, 68, 0.12)',
                 border: '1px solid rgba(239, 68, 68, 0.25)',
                 color: '#f87171',
                 fontSize: '0.84rem',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: '8px'
               }}
             >
-              <AlertCircle size={16} style={{ flexShrink: 0 }} />
-              <div>{actionError || error}</div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ lineHeight: 1.4 }}>{activeErrMsg}</div>
+              </div>
+              {isProviderDisabled && projectRef && (
+                <a
+                  href={`https://supabase.com/dashboard/project/${projectRef}/auth/providers`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    color: '#ffffff',
+                    backgroundColor: '#ef4444',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    alignSelf: 'flex-start',
+                    marginTop: '4px'
+                  }}
+                >
+                  <span>{uiLang === 'ta' ? 'Supabase-ல் Google-ஐ இயக்குக' : 'Enable Google in Supabase'}</span>
+                  <ExternalLink size={13} />
+                </a>
+              )}
             </div>
           )}
 
