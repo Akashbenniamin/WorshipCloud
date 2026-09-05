@@ -1922,7 +1922,7 @@ export function BibleReader({
       {/* ===================================================================== */}
       {/* MOBILE FULLSCREEN LANDSCAPE VERSE SLIDE READER                        */}
       {/* ===================================================================== */}
-      {isMobile && fullscreenSlideVerse && (
+      {fullscreenSlideVerse && (
         <div
           className="verse-landscape-wrapper"
           onTouchStart={handleSlideTouchStart}
@@ -1930,14 +1930,15 @@ export function BibleReader({
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 500,
+            zIndex: 99999,
             backgroundColor: '#0a0f1d',
             color: '#ffffff',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             userSelect: 'none',
-            WebkitUserSelect: 'none'
+            WebkitUserSelect: 'none',
+            touchAction: 'pan-y'
           }}
         >
           {/* Orientation handling stylesheet */}
@@ -2689,7 +2690,7 @@ export function BibleReader({
       )}
 
       {/* MOBILE LONG-PRESS VERSE ACTION MENU (BOTTOM SHEET / POPUP) */}
-      {isMobile && mobileActiveVerseMenu && (
+      {mobileActiveVerseMenu && (
         <div
           onClick={() => setMobileActiveVerseMenu(null)}
           style={{
