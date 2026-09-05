@@ -86,12 +86,45 @@ export function SongReader({
     }
   };
 
+  // Fullscreen and Orientation helpers for mobile slide mode
+  const exitFullscreenSlide = () => {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    } catch (e) {}
+    try {
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    } catch (e) {}
+  };
+
+  const enterFullscreenSlide = async () => {
+    try {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        await docEl.requestFullscreen({ navigationUI: 'hide' });
+      } else if (docEl.webkitRequestFullscreen) {
+        await docEl.webkitRequestFullscreen();
+      }
+    } catch (e) {}
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock('landscape');
+      }
+    } catch (e) {}
+  };
+
   // Hardware back button to exit fullscreen slide mode
   useEffect(() => {
     const handlePopState = () => {
       if (fullscreenSlideStanza) {
         setFullscreenSlideStanza(null);
         setIsStanzaNavModalOpen(false);
+        exitFullscreenSlide();
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -520,11 +553,7 @@ export function SongReader({
                         onClick={() => {
                           setFullscreenSlideStanza({ stanzaIndex: sIdx });
                           window.history.pushState({ modal: 'fullscreen_song_stanza' }, '');
-                          try {
-                            if (screen.orientation && screen.orientation.lock) {
-                              screen.orientation.lock('landscape').catch(() => {});
-                            }
-                          } catch (e) {}
+                          enterFullscreenSlide();
                         }}
                         style={{
                           padding: '12px 14px',
@@ -1450,60 +1479,130 @@ export function SongReader({
             }}
           />
 
-          {/* Top Right 50% Opacity Slide Switcher Button */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsStanzaNavModalOpen(true);
-            }}
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              zIndex: 30,
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '50%',
-              width: '44px',
-              height: '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              opacity: 0.5,
-              cursor: 'pointer',
-              transition: 'opacity 0.2s ease',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)'
-            }}
-            title="Slide Switcher"
-          >
-            <LayoutGrid size={20} />
-          </button>
-
-          {/* Slide Content: NO badges, NO extra text or buttons, clean landscape presentation */}
+          {/* Top Right Floating Buttons: Slide Switcher + Exit Fullscreen Button */}
           <div style={{
-            zIndex: 5,
-            maxWidth: '92%',
-            maxHeight: '90%',
-            textAlign: 'center',
+            position: 'absolute',
+            top: 'max(14px, env(safe-area-inset-top, 14px))',
+            right: 'max(14px, env(safe-area-inset-right, 14px))',
+            zIndex: 30,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            gap: '10px'
           }}>
-            <div style={{
-              fontSize: 'clamp(1.4rem, 4.2vw, 2.5rem)',
-              lineHeight: 1.8,
-              color: '#ffffff',
-              fontFamily: 'var(--font-tamil)',
-              fontWeight: 550,
-              whiteSpace: 'pre-line',
-              textShadow: '0 2px 8px rgba(0,0,0,0.8)'
-            }}>
-              {songStanzas[fullscreenSlideStanza.stanzaIndex] || ''}
-            </div>
+            {/* Slide Switcher Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsStanzaNavModalOpen(true);
+              }}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                borderRadius: '50%',
+                width: '42px',
+                height: '42px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                opacity: 0.7,
+                cursor: 'pointer',
+                transition: 'opacity 0.2s ease',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)'
+              }}
+              title="Slide Switcher"
+            >
+              <LayoutGrid size={20} />
+            </button>
+
+            {/* Exit Fullscreen Close Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullscreenSlideStanza(null);
+                setIsStanzaNavModalOpen(false);
+                exitFullscreenSlide();
+                try {
+                  if (window.history.state?.modal === 'fullscreen_song_stanza') {
+                    window.history.back();
+                  }
+                } catch (err) {}
+              }}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                borderRadius: '50%',
+                width: '42px',
+                height: '42px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                opacity: 0.7,
+                cursor: 'pointer',
+                transition: 'opacity 0.2s ease',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)'
+              }}
+              title="Exit Fullscreen"
+            >
+              <X size={20} />
+            </button>
           </div>
+
+          {/* Slide Content: Centered stanza presentation with dynamic font scaling */}
+          {(() => {
+            const rawStanza = songStanzas[fullscreenSlideStanza.stanzaIndex] || '';
+            const lineCount = rawStanza.split('\n').length;
+            const charCount = rawStanza.length;
+
+            let fontClamp = 'clamp(1.3rem, 5.8vh, 2.3rem)';
+            let lineH = 1.7;
+
+            if (lineCount > 6 || charCount > 200) {
+              fontClamp = 'clamp(0.95rem, 4.2vh, 1.35rem)';
+              lineH = 1.4;
+            } else if (lineCount > 4 || charCount > 120) {
+              fontClamp = 'clamp(1.1rem, 4.8vh, 1.65rem)';
+              lineH = 1.5;
+            } else if (lineCount > 3 || charCount > 70) {
+              fontClamp = 'clamp(1.2rem, 5.2vh, 1.95rem)';
+              lineH = 1.6;
+            }
+
+            return (
+              <div style={{
+                zIndex: 5,
+                maxWidth: 'min(940px, 92vw)',
+                maxHeight: '92vh',
+                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingTop: 'max(10px, env(safe-area-inset-top, 10px))',
+                paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
+                paddingLeft: 'max(24px, env(safe-area-inset-left, 24px))',
+                paddingRight: 'max(24px, env(safe-area-inset-right, 24px))',
+                boxSizing: 'border-box',
+                overflowY: 'auto'
+              }}>
+                <div style={{
+                  fontSize: fontClamp,
+                  lineHeight: lineH,
+                  color: '#ffffff',
+                  fontFamily: 'var(--font-tamil)',
+                  fontWeight: 550,
+                  whiteSpace: 'pre-line',
+                  textShadow: '0 2px 8px rgba(0,0,0,0.8)'
+                }}>
+                  {rawStanza}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 4. Fullscreen Slide Switcher Modal (Inside wrapper to keep landscape orientation) */}
           {isStanzaNavModalOpen && (

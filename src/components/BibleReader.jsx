@@ -122,17 +122,45 @@ export function BibleReader({
     return () => { active = false; };
   }, [navModalBook, currentBookCode, taovbsiBook]);
 
+  // Fullscreen and Orientation helpers for mobile slide mode
+  const exitFullscreenSlide = () => {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    } catch (e) {}
+    try {
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    } catch (e) {}
+  };
+
+  const enterFullscreenSlide = async () => {
+    try {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        await docEl.requestFullscreen({ navigationUI: 'hide' });
+      } else if (docEl.webkitRequestFullscreen) {
+        await docEl.webkitRequestFullscreen();
+      }
+    } catch (e) {}
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock('landscape');
+      }
+    } catch (e) {}
+  };
+
   // Device Hardware Back Button Listener to exit fullscreen slide mode
   useEffect(() => {
     const handlePopState = () => {
       if (fullscreenSlideVerse) {
         setFullscreenSlideVerse(null);
         setIsNavModalOpen(false);
-        try {
-          if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-          }
-        } catch (err) {}
+        exitFullscreenSlide();
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -870,11 +898,7 @@ export function BibleReader({
                         text: parallelMode && kjvVerse ? kjvVerse.text : verse.text
                       });
                       window.history.pushState({ modal: 'fullscreen_verse' }, '');
-                      try {
-                        if (screen.orientation && screen.orientation.lock) {
-                          screen.orientation.lock('landscape').catch(() => {});
-                        }
-                      } catch (e) {}
+                      enterFullscreenSlide();
                     }
                   }}
                   style={{
@@ -1873,38 +1897,80 @@ export function BibleReader({
             pointerEvents: 'none'
           }} />
 
-          {/* Top-Right 50% Opacity Grid Button: Opens Navigator Modal */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setNavModalTab('verse');
-              setIsNavModalOpen(true);
-            }}
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              zIndex: 520,
-              opacity: 0.5,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: '10px',
-              width: '42px',
-              height: '42px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              padding: 0,
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)'
-            }}
-            title={uiLang === 'ta' ? 'புத்தகம், அதிகாரம், வசனம் மாற்ற' : 'Select Book, Chapter, Verse'}
-          >
-            <LayoutGrid size={22} />
-          </button>
+          {/* Top Bar Floating Buttons: Navigator Grid + Close Exit Button */}
+          <div style={{
+            position: 'absolute',
+            top: 'max(14px, env(safe-area-inset-top, 14px))',
+            right: 'max(14px, env(safe-area-inset-right, 14px))',
+            zIndex: 520,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            {/* Grid Button: Opens Navigator Modal */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setNavModalTab('verse');
+                setIsNavModalOpen(true);
+              }}
+              style={{
+                opacity: 0.7,
+                backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                padding: 0,
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)'
+              }}
+              title={uiLang === 'ta' ? 'புத்தகம், அதிகாரம், வசனம் மாற்ற' : 'Select Book, Chapter, Verse'}
+            >
+              <LayoutGrid size={20} />
+            </button>
+
+            {/* Close Button: Exits Fullscreen Slide */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullscreenSlideVerse(null);
+                setIsNavModalOpen(false);
+                exitFullscreenSlide();
+                try {
+                  if (window.history.state?.modal === 'fullscreen_verse') {
+                    window.history.back();
+                  }
+                } catch (err) {}
+              }}
+              style={{
+                opacity: 0.7,
+                backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                padding: 0,
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)'
+              }}
+              title={uiLang === 'ta' ? 'வெளியேறு' : 'Exit Fullscreen'}
+            >
+              <X size={20} />
+            </button>
+          </div>
 
           {/* Main Slide Reading Area: Pure Verse Text + Reference */}
           <div
@@ -1916,7 +1982,10 @@ export function BibleReader({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '2.5rem 4rem 2rem 4rem',
+              paddingTop: 'max(12px, env(safe-area-inset-top, 12px))',
+              paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))',
+              paddingLeft: 'max(24px, env(safe-area-inset-left, 24px))',
+              paddingRight: 'max(24px, env(safe-area-inset-right, 24px))',
               boxSizing: 'border-box',
               position: 'relative',
               zIndex: 505
@@ -1952,41 +2021,65 @@ export function BibleReader({
               title="Next Verse"
             />
 
-            {/* Centered Verse Content */}
-            <div style={{
-              maxWidth: '920px',
-              textAlign: 'center',
-              zIndex: 507,
-              pointerEvents: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '16px'
-            }}>
-              <p style={{
-                fontSize: `${Math.max(22, Math.min(36, (fontSize || 19) * 1.45))}px`,
-                lineHeight: 1.75,
-                fontWeight: 600,
-                color: '#f8fafc',
-                margin: 0,
-                fontFamily: parallelMode ? 'var(--font-serif), Georgia, serif' : 'var(--font-tamil)',
-                letterSpacing: '0.01em',
-                textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)'
-              }}>
-                {currentSlideVerseText}
-              </p>
+            {/* Centered Verse Content: Guaranteed to never cut off */}
+            {(() => {
+              const textLen = (currentSlideVerseText || '').length;
+              // Dynamic font calculation to guarantee text fits landscape heights without truncating
+              let fontClamp = 'clamp(1.3rem, 5.8vh, 1.95rem)';
+              let lineH = 1.6;
+              if (textLen > 180) {
+                fontClamp = 'clamp(0.95rem, 4.2vh, 1.35rem)';
+                lineH = 1.42;
+              } else if (textLen > 110) {
+                fontClamp = 'clamp(1.1rem, 4.8vh, 1.55rem)';
+                lineH = 1.48;
+              } else if (textLen > 65) {
+                fontClamp = 'clamp(1.2rem, 5.3vh, 1.75rem)';
+                lineH = 1.52;
+              }
 
-              {/* Clean Reference Tag */}
-              <div style={{
-                fontSize: '1.05rem',
-                fontWeight: 800,
-                color: 'var(--accent)',
-                letterSpacing: '0.04em',
-                opacity: 0.95
-              }}>
-                {parallelMode ? currentSlideBookMeta?.english : currentSlideBookMeta?.name} {fullscreenSlideVerse.chapter}:{fullscreenSlideVerse.verseNum}
-              </div>
-            </div>
+              return (
+                <div style={{
+                  maxWidth: 'min(920px, 92vw)',
+                  maxHeight: '92vh',
+                  textAlign: 'center',
+                  zIndex: 507,
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 'clamp(6px, 1.8vh, 14px)',
+                  overflowY: 'auto'
+                }}>
+                  <p style={{
+                    fontSize: fontClamp,
+                    lineHeight: lineH,
+                    fontWeight: 600,
+                    color: '#f8fafc',
+                    margin: 0,
+                    fontFamily: parallelMode ? 'var(--font-serif), Georgia, serif' : 'var(--font-tamil)',
+                    letterSpacing: '0.01em',
+                    textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)'
+                  }}>
+                    {currentSlideVerseText}
+                  </p>
+
+                  {/* Clean Reference Tag */}
+                  <div style={{
+                    fontSize: 'clamp(0.85rem, 3.2vh, 1.05rem)',
+                    fontWeight: 800,
+                    color: 'var(--accent)',
+                    letterSpacing: '0.04em',
+                    opacity: 0.95,
+                    marginTop: '2px',
+                    flexShrink: 0
+                  }}>
+                    {parallelMode ? currentSlideBookMeta?.english : currentSlideBookMeta?.name} {fullscreenSlideVerse.chapter}:{fullscreenSlideVerse.verseNum}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* =================================================================== */}
