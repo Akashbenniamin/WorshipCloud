@@ -36,7 +36,9 @@ import {
   Image as ImageIcon,
   FileText,
   Sparkles,
-  Loader2
+  Loader2,
+  Bookmark,
+  BookmarkCheck
 } from 'lucide-react';
 import { getApproximateVersePage } from '../lib/biblePages';
 import { normalizeSearch } from '../lib/searchParser';
@@ -250,6 +252,141 @@ export function ProjectorConsole({
       bookSearchInputRef.current?.focus();
       bookSearchInputRef.current?.select();
     }, 20);
+  };
+
+  // Bible Bookmarks state (live synced with localStorage & BibleReader)
+  const [bibleBookmarks, setBibleBookmarks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('worship_cloud_bible_bookmarks');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [bibleLeftSubTab, setBibleLeftSubTab] = useState('chapters'); // 'chapters' | 'bookmarks'
+  const [slideContextMenu, setSlideContextMenu] = useState({ visible: false, x: 0, y: 0, slide: null });
+
+  // Cross-tab and cross-component sync
+  useEffect(() => {
+    const handleBookmarkSync = () => {
+      try {
+        const saved = localStorage.getItem('worship_cloud_bible_bookmarks');
+        setBibleBookmarks(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('storage', handleBookmarkSync);
+    window.addEventListener('worship_cloud_bible_bookmarks_updated', handleBookmarkSync);
+    return () => {
+      window.removeEventListener('storage', handleBookmarkSync);
+      window.removeEventListener('worship_cloud_bible_bookmarks_updated', handleBookmarkSync);
+    };
+  }, []);
+
+  // Dismiss context menu on click outside or escape
+  useEffect(() => {
+    const handleDismiss = () => {
+      setSlideContextMenu((prev) => (prev.visible ? { visible: false, x: 0, y: 0, slide: null } : prev));
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') handleDismiss();
+    };
+    window.addEventListener('click', handleDismiss);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', handleDismiss);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const isSlideBookmarked = (slide) => {
+    if (!slide?.id) return false;
+    const match = slide.id.match(/^bible-([^-]+)-(\d+)-(\d+)$/);
+    if (!match) return false;
+    const bmId = `${match[1]}-${match[2]}-${match[3]}`;
+    return bibleBookmarks.some((b) => b.id === bmId);
+  };
+
+  const toggleBookmarkFromSlide = (slide) => {
+    if (!slide?.id) return;
+    const match = slide.id.match(/^bible-([^-]+)-(\d+)-(\d+)$/);
+    if (!match) return;
+    const bookCode = match[1];
+    const chapter = parseInt(match[2], 10);
+    const verseNumber = parseInt(match[3], 10);
+    const bmId = `${bookCode}-${chapter}-${verseNumber}`;
+    const targetMeta = booksMeta.find((b) => b.code === bookCode) || { name: bookCode, english: bookCode };
+
+    setBibleBookmarks((prev) => {
+      const exists = prev.some((b) => b.id === bmId);
+      let updated;
+      if (exists) {
+        updated = prev.filter((b) => b.id !== bmId);
+      } else {
+        const item = {
+          id: bmId,
+          bookCode,
+          bookName: targetMeta.name || bookCode,
+          englishBookName: targetMeta.english || bookCode,
+          chapter,
+          verseNumber,
+          text: slide.body || '',
+          date: new Date().toLocaleDateString(uiLang === 'ta' ? 'ta-IN' : 'en-US')
+        };
+        updated = [item, ...prev];
+      }
+      try {
+        localStorage.setItem('worship_cloud_bible_bookmarks', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('worship_cloud_bible_bookmarks_updated', { detail: updated }));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const removeBibleBookmark = (id) => {
+    setBibleBookmarks((prev) => {
+      const updated = prev.filter((b) => b.id !== id);
+      try {
+        localStorage.setItem('worship_cloud_bible_bookmarks', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('worship_cloud_bible_bookmarks_updated', { detail: updated }));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleSelectBookmark = (bm) => {
+    if (!bm) return;
+    if (leftTab !== 'bible') {
+      setLeftTab('bible');
+    }
+    if (bibleBookCode !== bm.bookCode) {
+      setBibleBookCode(bm.bookCode);
+    }
+    setBibleChapterNum(bm.chapter);
+
+    const targetSlideId = `bible-${bm.bookCode}-${bm.chapter}-${bm.verseNumber}`;
+    setSelectedSlideId(targetSlideId);
+    setTimeout(() => {
+      const el = document.getElementById(`slide-card-${targetSlideId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 180);
+  };
+
+  const handleSlideContextMenu = (e, slide) => {
+    if (activePresentation?.kind !== 'bible' && !slide?.id?.startsWith('bible-')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const menuWidth = 210;
+    const menuHeight = 130;
+    const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
+    const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
+    setSlideContextMenu({
+      visible: true,
+      x: Math.max(10, x),
+      y: Math.max(10, y),
+      slide
+    });
   };
 
   // Songs state
@@ -2005,51 +2142,205 @@ export function ProjectorConsole({
               )}
             </div>
 
-            {/* CHAPTER NUMBERS IN A SQUARE GRID (Optically Centered) */}
-            <div style={{ marginTop: '0.75rem', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                CHAPTERS ({currentBookMeta?.chapters || 1})
-              </div>
+            {/* SUB-SECTION TOGGLE: CHAPTERS VS BOOKMARKS */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '2px',
+              backgroundColor: 'var(--bg-canvas)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              marginTop: '0.65rem',
+              marginBottom: '0.4rem',
+              gap: '2px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setBibleLeftSubTab('chapters')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px',
+                  padding: '5px 8px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 750,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: bibleLeftSubTab === 'chapters' ? 'var(--accent)' : 'transparent',
+                  color: bibleLeftSubTab === 'chapters' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
+                  transition: 'all 0.12s ease'
+                }}
+              >
+                <BookOpen size={12} />
+                <span>{uiLang === 'ta' ? 'அதிகாரங்கள்' : 'Chapters'} ({currentBookMeta?.chapters || 1})</span>
+              </button>
 
-              <div style={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))',
-                gap: '5px',
-                alignContent: 'start',
-                paddingRight: '2px'
-              }}>
-                {Array.from({ length: currentBookMeta?.chapters || 1 }, (_, i) => i + 1).map((ch) => {
-                  const isCurrent = bibleChapterNum === ch;
-                  return (
-                    <button
-                      key={ch}
-                      onClick={() => setBibleChapterNum(ch)}
-                      style={{
-                        aspectRatio: '1 / 1',
-                        borderRadius: '6px',
-                        border: isCurrent ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
-                        backgroundColor: isCurrent ? 'var(--accent)' : 'var(--bg-canvas)',
-                        color: isCurrent ? 'var(--accent-contrast)' : 'var(--text-primary)',
-                        fontSize: '0.84rem',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 0,
-                        transform: 'translateY(-0.5px)',
-                        transition: 'all 0.12s ease'
-                      }}
-                    >
-                      {ch}
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => setBibleLeftSubTab('bookmarks')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px',
+                  padding: '5px 8px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 750,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: bibleLeftSubTab === 'bookmarks' ? 'var(--accent)' : 'transparent',
+                  color: bibleLeftSubTab === 'bookmarks' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
+                  transition: 'all 0.12s ease'
+                }}
+              >
+                <Bookmark size={12} />
+                <span>{uiLang === 'ta' ? 'புக்மார்க்' : 'Bookmarks'} ({bibleBookmarks.length})</span>
+              </button>
             </div>
+
+            {/* TAB CONTENT: CHAPTERS GRID */}
+            {bibleLeftSubTab === 'chapters' ? (
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <div style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))',
+                  gap: '5px',
+                  alignContent: 'start',
+                  paddingRight: '2px',
+                  marginTop: '4px'
+                }}>
+                  {Array.from({ length: currentBookMeta?.chapters || 1 }, (_, i) => i + 1).map((ch) => {
+                    const isCurrent = bibleChapterNum === ch;
+                    return (
+                      <button
+                        key={ch}
+                        onClick={() => setBibleChapterNum(ch)}
+                        style={{
+                          aspectRatio: '1 / 1',
+                          borderRadius: '6px',
+                          border: isCurrent ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
+                          backgroundColor: isCurrent ? 'var(--accent)' : 'var(--bg-canvas)',
+                          color: isCurrent ? 'var(--accent-contrast)' : 'var(--text-primary)',
+                          fontSize: '0.84rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0,
+                          transform: 'translateY(-0.5px)',
+                          transition: 'all 0.12s ease'
+                        }}
+                      >
+                        {ch}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* TAB CONTENT: BOOKMARKS LIST */
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto', paddingRight: '2px', marginTop: '4px' }}>
+                {bibleBookmarks.length === 0 ? (
+                  <div style={{
+                    padding: '2rem 0.5rem',
+                    textAlign: 'center',
+                    color: 'var(--text-tertiary)',
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <Bookmark size={24} style={{ opacity: 0.4 }} />
+                    <div style={{ whiteSpace: 'pre-line' }}>
+                      {uiLang === 'ta' 
+                        ? 'புக்மார்க்குகள் இல்லை.\nமினி ஸ்லைடை வலது கிளிக் செய்து புக்மார்க் செய்யலாம்.' 
+                        : 'No bookmarks yet.\nRight-click any slide to bookmark it.'}
+                    </div>
+                  </div>
+                ) : (
+                  bibleBookmarks.map((bm) => {
+                    const isCurrentSlide = selectedSlideId === `bible-${bm.bookCode}-${bm.chapter}-${bm.verseNumber}`;
+                    return (
+                      <div
+                        key={bm.id}
+                        onClick={() => handleSelectBookmark(bm)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '7px',
+                          backgroundColor: isCurrentSlide ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                          border: `1px solid ${isCurrentSlide ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                          transition: 'all 0.12s ease'
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+                            <Bookmark size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--accent)' }}>
+                              {bm.bookName} {bm.chapter}:{bm.verseNumber}
+                            </span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                              ({bm.englishBookName})
+                            </span>
+                          </div>
+                          {bm.text && (
+                            <div style={{
+                              fontSize: '0.74rem',
+                              color: 'var(--text-secondary)',
+                              lineHeight: 1.3,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}>
+                              {bm.text}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeBibleBookmark(bm.id);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '3px',
+                            color: 'var(--text-tertiary)',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
+                          title={uiLang === 'ta' ? 'புக்மார்க்கை நீக்கு' : 'Delete bookmark'}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
 
             {/* MOBILE ONLY: Verses list with tap to go live fullscreen */}
             {isMobile && (
@@ -3698,8 +3989,10 @@ export function ProjectorConsole({
                 return (
                   <div
                     key={slide.id}
+                    id={`slide-card-${slide.id}`}
                     onClick={() => handleSelectSlide(slide)}
                     onDoubleClick={() => handleGoLive(slide)}
+                    onContextMenu={(e) => handleSlideContextMenu(e, slide)}
                     style={{
                       aspectRatio: '16 / 9',
                       backgroundColor: slide.bgType === 'texture' ? '#0b111e' : (slide.backgroundColor || '#0c1322'),
@@ -3718,7 +4011,9 @@ export function ProjectorConsole({
                       boxSizing: 'border-box',
                       transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease, border-color 0.15s ease',
                       position: 'relative',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      contain: 'content',
+                      isolation: 'isolate'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
@@ -3818,7 +4113,7 @@ export function ProjectorConsole({
                           </>
                         )}
 
-                        {/* Top Bar: Slide Index & Live Badge */}
+                        {/* Top Bar: Slide Index & Live Badge & Bookmark Indicator */}
                         <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                           <span style={{ 
                             fontSize: '0.82rem', 
@@ -3829,11 +4124,18 @@ export function ProjectorConsole({
                           }}>
                             {String(index + 1).padStart(2, '0')}
                           </span>
-                          {isLive && (
-                            <span style={{ fontSize: '0.58rem', fontWeight: 900, color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '1px 4px', borderRadius: '3px' }}>
-                              LIVE
-                            </span>
-                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {isSlideBookmarked(slide) && (
+                              <span title={uiLang === 'ta' ? 'புக்மார்க் செய்யப்பட்டது' : 'Bookmarked'} style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center' }}>
+                                <Bookmark size={13} fill="var(--accent)" />
+                              </span>
+                            )}
+                            {isLive && (
+                              <span style={{ fontSize: '0.58rem', fontWeight: 900, color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '1px 4px', borderRadius: '3px' }}>
+                                LIVE
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Middle: Content Preview */}
@@ -3842,6 +4144,7 @@ export function ProjectorConsole({
                           zIndex: 2,
                           fontSize: '0.72rem',
                           lineHeight: 1.35,
+                          maxHeight: '44px',
                           color: slide.textColor || '#ffffff',
                           fontFamily: slide.fontFamily || 'Noto Sans Tamil',
                           textAlign: slide.align || 'center',
@@ -3851,6 +4154,9 @@ export function ProjectorConsole({
                           overflow: 'hidden',
                           fontWeight: 650,
                           pointerEvents: 'none',
+                          wordBreak: 'break-word',
+                          flex: 1,
+                          minHeight: 0,
                           textShadow: slide.bgType === 'texture' ? '0 1px 4px rgba(0,0,0,0.95)' : 'none'
                         }}>
                           {slide.body || slide.title}
@@ -4431,6 +4737,106 @@ export function ProjectorConsole({
             <span>↕ {uiLang === 'ta' ? 'மேல்/கீழ்: தொடக்கம்' : 'Swipe: Start'}</span>
             <span>{uiLang === 'ta' ? 'வலது: அடுத்தது' : 'Tap right: Next'} ▶</span>
           </div>
+        </div>
+      )}
+
+      {/* RIGHT-CLICK SLIDE CONTEXT MENU */}
+      {slideContextMenu.visible && slideContextMenu.slide && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            top: slideContextMenu.y,
+            left: slideContextMenu.x,
+            zIndex: 99999,
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '8px',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+            padding: '4px',
+            minWidth: '200px'
+          }}
+        >
+          {/* Header citation preview */}
+          <div style={{
+            padding: '6px 10px',
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            color: 'var(--text-tertiary)',
+            borderBottom: '1px solid var(--border-subtle)',
+            marginBottom: '4px'
+          }}>
+            {slideContextMenu.slide.reference || slideContextMenu.slide.title || 'Slide Action'}
+          </div>
+
+          {/* Toggle Bookmark */}
+          <button
+            type="button"
+            onClick={() => {
+              toggleBookmarkFromSlide(slideContextMenu.slide);
+              setSlideContextMenu({ visible: false, x: 0, y: 0, slide: null });
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'transparent',
+              color: isSlideBookmarked(slideContextMenu.slide) ? '#ef4444' : 'var(--text-primary)',
+              fontSize: '0.8rem',
+              fontWeight: 650,
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'background-color 0.1s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-canvas)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            {isSlideBookmarked(slideContextMenu.slide) ? (
+              <>
+                <Trash2 size={14} style={{ color: '#ef4444' }} />
+                <span>{uiLang === 'ta' ? 'புக்மார்க்கை நீக்கு' : 'Remove Bookmark'}</span>
+              </>
+            ) : (
+              <>
+                <Bookmark size={14} style={{ color: 'var(--accent)' }} />
+                <span>{uiLang === 'ta' ? 'புக்மார்க் செய்' : 'Bookmark Verse'}</span>
+              </>
+            )}
+          </button>
+
+          {/* Go Live */}
+          <button
+            type="button"
+            onClick={() => {
+              handleGoLive(slideContextMenu.slide);
+              setSlideContextMenu({ visible: false, x: 0, y: 0, slide: null });
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--accent)',
+              fontSize: '0.8rem',
+              fontWeight: 650,
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'background-color 0.1s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-canvas)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <Cast size={14} />
+            <span>{uiLang === 'ta' ? 'திரையிடு (Live)' : 'Present Live'}</span>
+          </button>
         </div>
       )}
     </div>

@@ -1048,7 +1048,7 @@ export function Navbar({
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>
-                            {s.n ? `${s.n}. ` : ''}{s.t || s.title}
+                            {(s.t || s.title || '').replace(/^[-—\s]+/, '')}
                           </div>
                           <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
                             {s.s && s.s !== 'AdoreHim 18K Tamil Songs' ? s.s : (uiLang === 'ta' ? 'தமிழ் ஆராதனைப் பாடல்' : 'Tamil Worship Song')}

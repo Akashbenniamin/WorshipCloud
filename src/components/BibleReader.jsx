@@ -192,6 +192,21 @@ export function BibleReader({
     }
   });
 
+  useEffect(() => {
+    const handleBookmarkSync = () => {
+      try {
+        const saved = localStorage.getItem('worship_cloud_bible_bookmarks');
+        setBookmarks(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('storage', handleBookmarkSync);
+    window.addEventListener('worship_cloud_bible_bookmarks_updated', handleBookmarkSync);
+    return () => {
+      window.removeEventListener('storage', handleBookmarkSync);
+      window.removeEventListener('worship_cloud_bible_bookmarks_updated', handleBookmarkSync);
+    };
+  }, []);
+
   const verseRefs = useRef({});
   const currentMeta = booksMeta.find((b) => b.code === currentBookCode) || booksMeta[0];
 
@@ -217,6 +232,7 @@ export function BibleReader({
       }
       try {
         localStorage.setItem('worship_cloud_bible_bookmarks', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('worship_cloud_bible_bookmarks_updated', { detail: updated }));
       } catch {}
       return updated;
     });
@@ -227,6 +243,7 @@ export function BibleReader({
       const updated = prev.filter((b) => b.id !== id);
       try {
         localStorage.setItem('worship_cloud_bible_bookmarks', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('worship_cloud_bible_bookmarks_updated', { detail: updated }));
       } catch {}
       return updated;
     });

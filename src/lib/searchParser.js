@@ -3,7 +3,7 @@ export function normalizeSearch(value = '') {
     .toLocaleLowerCase()
     .normalize('NFC')
     .replace(/[\u200c\u200d\ufeff]/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ')
     .trim();
 }
 
@@ -57,7 +57,7 @@ export function matchBookQuery(bookPart = '', booksMeta = []) {
     if (normalizeSearch(b.name).startsWith(normalizedBook)) return true;
     return (b.aliases || []).some((alias) => {
       const na = normalizeSearch(alias);
-      return na.startsWith(normalizedBook) || (ptBook.length >= 3 && phoneticTanglish(alias).startsWith(ptBook));
+      return na.startsWith(normalizedBook) || (ptBook.length >= 2 && phoneticTanglish(alias).startsWith(ptBook));
     });
   });
   return matched || null;
@@ -87,7 +87,7 @@ export function filterBooksByQuery(query = '', booksMeta = [], maxResults = 6) {
       (b.aliases || []).some((a) => {
         const na = normalizeSearch(a);
         const pa = phoneticTanglish(a);
-        return na.includes(needle) || (ptNeedle.length >= 3 && pa.includes(ptNeedle));
+        return na.includes(needle) || (ptNeedle.length >= 2 && pa.includes(ptNeedle));
       });
 
     if (isMatch) {
@@ -105,6 +105,7 @@ export function filterBooksByQuery(query = '', booksMeta = [], maxResults = 6) {
  * "யோவான் 3:16" -> { book: 'யோவான்', chapter: 3, verse: 16 }
  * "1 samuel 2:3" -> { book: '1 samuel', chapter: 2, verse: 3 }
  * "சங்கீதம் 23" -> { book: 'சங்கீதம்', chapter: 23, verse: 1 }
+ * "san 2.1" -> { book: 'சங்கீதம்', chapter: 2, verse: 1 }
  * "p 683" or "page 683" or "பக்கம் 683" -> { type: 'page', page: 683 }
  */
 export function parseReferenceQuery(query, booksMeta = []) {
@@ -121,8 +122,8 @@ export function parseReferenceQuery(query, booksMeta = []) {
   }
 
   // 2. Reference format: [Book Name] [Chapter]:[Verse] or [Book Name] [Chapter]
-  // Handles prefixes with numbers like "1 John 2:3" or "1 யோவான் 2:3"
-  const refMatch = raw.match(/^([1-3]?\s*[\p{L}\s]+?)\s*(\d+)(?:[:.\s](\d+))?$/u);
+  // Handles prefixes with numbers like "1 John 2:3" or "1 யோவான் 2:3", dot separator like "san 2.1"
+  const refMatch = raw.match(/^([1-3]?\s*[\p{L}\p{M}\s]+?)\s*(\d+)(?:[:.\s](\d+))?$/u);
   if (!refMatch) return null;
 
   const bookPart = refMatch[1].trim();
