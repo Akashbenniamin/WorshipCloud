@@ -463,6 +463,9 @@ export function ProjectorConsole({
 
   // Bible Live Highlighter State (Strictly only for Bible in Live/Projector)
   const [bibleHighlights, setBibleHighlights] = useState([]);
+  const bibleHighlightsRef = useRef([]);
+  bibleHighlightsRef.current = bibleHighlights;
+
   const [activeHighlightColor, setActiveHighlightColor] = useState('#f6d365');
   const [highlightInput, setHighlightInput] = useState('');
   const [floatingHighlightPos, setFloatingHighlightPos] = useState(null);
@@ -476,22 +479,20 @@ export function ProjectorConsole({
     const trimmed = String(text || '').trim();
     if (!trimmed) return;
 
-    let nextHighlights = [];
-    setBibleHighlights((prev) => {
-      const already = prev.some((h) => h.text.toLowerCase() === trimmed.toLowerCase());
-      if (already) {
-        nextHighlights = prev;
-        return prev;
-      }
-      nextHighlights = [...prev, { text: trimmed, color }];
-      return nextHighlights;
-    });
+    const currentList = bibleHighlightsRef.current || [];
+    const already = currentList.some((h) => h.text.toLowerCase() === trimmed.toLowerCase());
+    const nextHighlights = already ? currentList : [...currentList, { text: trimmed, color }];
 
-    if (projector?.addHighlight) {
+    bibleHighlightsRef.current = nextHighlights;
+    setBibleHighlights(nextHighlights);
+
+    if (projector?.setHighlights) {
+      projector.setHighlights(nextHighlights);
+    } else if (projector?.addHighlight) {
       projector.addHighlight(trimmed, color);
     }
 
-    // Auto-update live projection if current slide in normal preview is active in live projection
+    // Auto-update live projection activeSlide if applicable
     if (projector.activeSlide && (projector.activeSlide.id === selectedSlide?.id || quickLive)) {
       projector.projectSlide({
         ...projector.activeSlide,
@@ -501,13 +502,15 @@ export function ProjectorConsole({
   };
 
   const handleRemoveBibleHighlight = (text) => {
-    let nextHighlights = [];
-    setBibleHighlights((prev) => {
-      nextHighlights = prev.filter((h) => h.text.toLowerCase() !== String(text).toLowerCase());
-      return nextHighlights;
-    });
+    const currentList = bibleHighlightsRef.current || [];
+    const nextHighlights = currentList.filter((h) => h.text.toLowerCase() !== String(text).toLowerCase());
 
-    if (projector?.removeHighlight) {
+    bibleHighlightsRef.current = nextHighlights;
+    setBibleHighlights(nextHighlights);
+
+    if (projector?.setHighlights) {
+      projector.setHighlights(nextHighlights);
+    } else if (projector?.removeHighlight) {
       projector.removeHighlight(text);
     }
 
@@ -520,8 +523,12 @@ export function ProjectorConsole({
   };
 
   const handleClearBibleHighlights = () => {
+    bibleHighlightsRef.current = [];
     setBibleHighlights([]);
-    if (projector?.clearHighlights) {
+
+    if (projector?.setHighlights) {
+      projector.setHighlights([]);
+    } else if (projector?.clearHighlights) {
       projector.clearHighlights();
     }
 
@@ -1003,20 +1010,25 @@ export function ProjectorConsole({
       align: slide.align || 'center',
       kind: isBible ? 'bible' : (isSong ? 'song' : (activePresentation.kind || 'custom')),
       type: isBible ? 'bible' : (isSong ? 'song' : (activePresentation.kind || 'custom')),
-      highlights: isBible ? bibleHighlights : [],
+      highlights: isBible ? (bibleHighlightsRef.current || bibleHighlights) : [],
       altLineColorEnabled: isSong ? (slide.altLineColorEnabled || songStyle.altLineColorEnabled || false) : false,
       altLineColor: isSong ? (slide.altLineColor || songStyle.altLineColor || '#38bdf8') : undefined,
       presentationSlides: activePresentation.slides
     });
 
     if (isBible) {
-      if (bibleHighlights.length > 0) {
-        bibleHighlights.forEach((h) => {
-          projector.addHighlight(h.text, h.color);
-        });
+      const activeBibleHighlights = bibleHighlightsRef.current || bibleHighlights;
+      if (projector?.setHighlights) {
+        projector.setHighlights(activeBibleHighlights);
+      } else if (projector?.addHighlight) {
+        activeBibleHighlights.forEach((h) => projector.addHighlight(h.text, h.color));
       }
     } else {
-      projector.clearHighlights();
+      if (projector?.setHighlights) {
+        projector.setHighlights([]);
+      } else if (projector?.clearHighlights) {
+        projector.clearHighlights();
+      }
     }
   };
 
@@ -1689,8 +1701,13 @@ export function ProjectorConsole({
           <button
             onClick={() => {
               setLeftTab('bible');
-              if (bibleHighlights.length > 0 && projector?.addHighlight) {
-                bibleHighlights.forEach((h) => projector.addHighlight(h.text, h.color));
+              const activeBibleHighlights = bibleHighlightsRef.current || bibleHighlights;
+              if (activeBibleHighlights.length > 0) {
+                if (projector?.setHighlights) {
+                  projector.setHighlights(activeBibleHighlights);
+                } else if (projector?.addHighlight) {
+                  activeBibleHighlights.forEach((h) => projector.addHighlight(h.text, h.color));
+                }
               }
               if (bibleBookData) {
                 loadBibleChapterSlides(bibleBookCode, bibleChapterNum, bibleBookData);

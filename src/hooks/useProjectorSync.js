@@ -209,13 +209,18 @@ export function useProjectorSync() {
   }, [broadcastState]);
 
   const projectSlide = useCallback((slide) => {
-    broadcastState((prev) => ({
-      ...prev,
-      activeSlide: slide,
-      highlights: [],
-      isBlackout: false,
-      isClear: false
-    }));
+    broadcastState((prev) => {
+      const preservedHighlights = slide && Array.isArray(slide.highlights)
+        ? slide.highlights
+        : [];
+      return {
+        ...prev,
+        activeSlide: slide ? { ...slide, highlights: preservedHighlights } : null,
+        highlights: preservedHighlights,
+        isBlackout: false,
+        isClear: false
+      };
+    });
   }, [broadcastState]);
 
   const toggleBlackout = useCallback(() => {
@@ -242,6 +247,15 @@ export function useProjectorSync() {
     }));
   }, [broadcastState]);
 
+  const setHighlights = useCallback((newHighlights) => {
+    const list = Array.isArray(newHighlights) ? newHighlights : [];
+    broadcastState((prev) => ({
+      ...prev,
+      highlights: list,
+      activeSlide: prev.activeSlide ? { ...prev.activeSlide, highlights: list } : prev.activeSlide
+    }));
+  }, [broadcastState]);
+
   const addHighlight = useCallback((text, color) => {
     const trimmed = String(text || '').trim();
     if (!trimmed) return;
@@ -263,7 +277,7 @@ export function useProjectorSync() {
 
   const removeHighlight = useCallback((text) => {
     broadcastState((prev) => {
-      const newHighlights = (prev.highlights || []).filter((h) => h.text !== text);
+      const newHighlights = (prev.highlights || []).filter((h) => h.text.toLowerCase() !== String(text).toLowerCase());
       return {
         ...prev,
         highlights: newHighlights,
@@ -500,6 +514,7 @@ export function useProjectorSync() {
     unproject,
     nextSlide,
     prevSlide,
+    setHighlights,
     addHighlight,
     removeHighlight,
     clearHighlights,
