@@ -52,6 +52,12 @@ export function BibleReader({
   const [mobileSelectedBookCode, setMobileSelectedBookCode] = useState(currentBookCode);
   const [mobileJumpInput, setMobileJumpInput] = useState('');
 
+  // Mobile Long-Press Verse Action Menu State
+  const [mobileActiveVerseMenu, setMobileActiveVerseMenu] = useState(null); // { verse, kjvVerse, isBookmarked }
+  const longPressTimerRef = useRef(null);
+  const isLongPressTriggeredRef = useRef(false);
+  const touchStartPosRef = useRef({ x: 0, y: 0 });
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
@@ -573,7 +579,7 @@ export function BibleReader({
       flexDirection: isMobile ? 'column' : undefined,
       gridTemplateColumns: isMobile ? undefined : '1fr 390px',
       gap: isMobile ? '0' : '1.25rem',
-      padding: isMobile ? '8px 0.5rem 0.5rem 0.5rem' : '0 1.5rem 0.5rem 1.5rem',
+      padding: isMobile ? '8px 8px 0.5rem 8px' : '0 1.5rem 0.5rem 1.5rem',
       width: '100%',
       height: '100%',
       maxHeight: '100%',
@@ -873,11 +879,11 @@ export function BibleReader({
           <div style={{
             flex: 1,
             overflowY: 'auto',
-            paddingRight: '6px',
+            paddingRight: isMobile ? '0' : '6px',
             paddingBottom: isMobile ? '76px' : '0',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.75rem'
+            gap: isMobile ? '0.35rem' : '0.75rem'
           }}>
             {currentTamilChapter?.verses?.map((verse) => {
               const kjvVerse = currentKjvChapter?.verses?.find((v) => v.number === verse.number);
@@ -891,6 +897,10 @@ export function BibleReader({
                   ref={(el) => (verseRefs.current[verse.number] = el)}
                   onClick={() => {
                     if (isMobile) {
+                      if (isLongPressTriggeredRef.current) {
+                        isLongPressTriggeredRef.current = false;
+                        return;
+                      }
                       setFullscreenSlideVerse({
                         bookCode: currentBookCode,
                         chapter: currentChapter,
@@ -901,85 +911,145 @@ export function BibleReader({
                       enterFullscreenSlide();
                     }
                   }}
+                  onTouchStart={(e) => {
+                    if (!isMobile) return;
+                    isLongPressTriggeredRef.current = false;
+                    const touch = e.touches[0];
+                    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+                    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+                    longPressTimerRef.current = setTimeout(() => {
+                      isLongPressTriggeredRef.current = true;
+                      try {
+                        if (navigator.vibrate) navigator.vibrate(35);
+                      } catch (err) {}
+                      setMobileActiveVerseMenu({
+                        verse,
+                        kjvVerse,
+                        isBookmarked
+                      });
+                    }, 480);
+                  }}
+                  onTouchMove={(e) => {
+                    if (!isMobile || !longPressTimerRef.current) return;
+                    const touch = e.touches[0];
+                    const diffX = Math.abs(touch.clientX - touchStartPosRef.current.x);
+                    const diffY = Math.abs(touch.clientY - touchStartPosRef.current.y);
+                    if (diffX > 10 || diffY > 10) {
+                      clearTimeout(longPressTimerRef.current);
+                      longPressTimerRef.current = null;
+                    }
+                  }}
+                  onTouchEnd={() => {
+                    if (longPressTimerRef.current) {
+                      clearTimeout(longPressTimerRef.current);
+                      longPressTimerRef.current = null;
+                    }
+                  }}
+                  onTouchCancel={() => {
+                    if (longPressTimerRef.current) {
+                      clearTimeout(longPressTimerRef.current);
+                      longPressTimerRef.current = null;
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    if (isMobile) {
+                      e.preventDefault();
+                      setMobileActiveVerseMenu({
+                        verse,
+                        kjvVerse,
+                        isBookmarked
+                      });
+                    }
+                  }}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '38px 1fr auto',
-                    gap: '12px',
-                    padding: '14px 18px',
-                    borderRadius: '8px',
+                    display: isMobile ? 'flex' : 'grid',
+                    flexDirection: isMobile ? 'row' : undefined,
+                    gridTemplateColumns: isMobile ? undefined : '38px 1fr auto',
+                    gap: isMobile ? '6px' : '12px',
+                    padding: isMobile ? '7px 6px' : '14px 18px',
+                    borderRadius: isMobile ? '6px' : '8px',
                     backgroundColor: isBookmarked ? 'var(--accent-light)' : 'var(--bg-surface)',
                     border: isBookmarked ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
                     transition: 'all 0.15s ease',
-                    alignItems: 'start',
-                    cursor: isMobile ? 'pointer' : 'default'
+                    alignItems: 'baseline',
+                    cursor: isMobile ? 'pointer' : 'default',
+                    WebkitTouchCallout: isMobile ? 'none' : undefined,
+                    userSelect: isMobile ? 'none' : undefined
                   }}
                   onMouseEnter={(e) => {
-                    if (!isBookmarked) e.currentTarget.style.borderColor = 'var(--border-strong)';
+                    if (!isBookmarked && !isMobile) e.currentTarget.style.borderColor = 'var(--border-strong)';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isBookmarked) e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                    if (!isBookmarked && !isMobile) e.currentTarget.style.borderColor = 'var(--border-subtle)';
                   }}
                 >
-                  {/* Verse Number */}
+                  {/* Verse Number: Ultra-compact, inline baseline aligned on mobile */}
                   <span style={{
-                    fontSize: '0.92rem',
+                    fontSize: isMobile ? '0.82rem' : '0.92rem',
                     fontWeight: 800,
                     color: 'var(--accent)',
-                    paddingTop: '2px',
-                    userSelect: 'none'
+                    flexShrink: 0,
+                    userSelect: 'none',
+                    lineHeight: 1.4,
+                    minWidth: isMobile ? '18px' : '38px',
+                    textAlign: isMobile ? 'left' : 'center'
                   }}>
                     {verse.number}
                   </span>
 
-                  {/* Verse Content: Replaces text with English when parallelMode is active */}
-                  <div style={{ minWidth: 0 }}>
+                  {/* Verse Content: Expanded to use 100% available horizontal space on mobile */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
                       fontSize: `${fontSize}px`,
-                      lineHeight: 1.8,
+                      lineHeight: isMobile ? 1.55 : 1.8,
                       color: 'var(--text-primary)',
                       fontFamily: parallelMode ? 'var(--font-serif), Georgia, serif' : 'var(--font-tamil)',
-                      fontWeight: parallelMode ? 400 : 450
+                      fontWeight: parallelMode ? 400 : 450,
+                      margin: 0,
+                      padding: 0
                     }}>
                       {parallelMode && kjvVerse ? kjvVerse.text : verse.text}
                     </p>
                   </div>
 
-                  {/* Actions on Verse */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleBookmark(verse);
-                      }}
-                      title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
-                      style={{
-                        padding: '6px',
-                        borderRadius: '6px',
-                        backgroundColor: 'var(--bg-canvas)',
-                        border: '1px solid var(--border-subtle)',
-                        color: isBookmarked ? 'var(--accent)' : 'var(--text-tertiary)'
-                      }}
-                    >
-                      {isBookmarked ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
-                    </button>
+                  {/* Actions on Verse: Rendered on Desktop ONLY (Mobile uses Long-Press Menu) */}
+                  {!isMobile && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleBookmark(verse);
+                        }}
+                        title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                        style={{
+                          padding: '6px',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-canvas)',
+                          border: '1px solid var(--border-subtle)',
+                          color: isBookmarked ? 'var(--accent)' : 'var(--text-tertiary)'
+                        }}
+                      >
+                        {isBookmarked ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+                      </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyVerseText(verse);
-                      }}
-                      title={t.copy}
-                      style={{
-                        padding: '6px',
-                        borderRadius: '6px',
-                        backgroundColor: 'var(--bg-canvas)',
-                        border: '1px solid var(--border-subtle)',
-                        color: copiedVerseNum === verse.number ? 'var(--accent)' : 'var(--text-tertiary)'
-                      }}
-                    >
-                      {copiedVerseNum === verse.number ? <Check size={15} /> : <Copy size={15} />}
-                    </button>
-                  </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyVerseText(verse);
+                        }}
+                        title={t.copy}
+                        style={{
+                          padding: '6px',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-canvas)',
+                          border: '1px solid var(--border-subtle)',
+                          color: copiedVerseNum === verse.number ? 'var(--accent)' : 'var(--text-tertiary)'
+                        }}
+                      >
+                        {copiedVerseNum === verse.number ? <Check size={15} /> : <Copy size={15} />}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -2614,6 +2684,230 @@ export function BibleReader({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE LONG-PRESS VERSE ACTION MENU (BOTTOM SHEET / POPUP) */}
+      {isMobile && mobileActiveVerseMenu && (
+        <div
+          onClick={() => setMobileActiveVerseMenu(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            animation: 'fadeIn 0.15s ease'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderTopLeftRadius: '18px',
+              borderTopRightRadius: '18px',
+              borderTop: '1px solid var(--border-subtle)',
+              boxShadow: '0 -10px 25px rgba(0, 0, 0, 0.35)',
+              padding: '16px 18px 28px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              animation: 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            {/* Grab handle indicator */}
+            <div style={{
+              width: '36px',
+              height: '4px',
+              backgroundColor: 'var(--border-strong)',
+              borderRadius: '2px',
+              alignSelf: 'center',
+              opacity: 0.7,
+              marginBottom: '2px'
+            }} />
+
+            {/* Verse Header Reference & Close */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: '10px',
+              borderBottom: '1px solid var(--border-subtle)'
+            }}>
+              <div>
+                <div style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 800,
+                  color: 'var(--accent)',
+                  letterSpacing: '-0.01em'
+                }}>
+                  {parallelMode ? currentMeta?.english : currentMeta?.name} {currentChapter}:{mobileActiveVerseMenu.verse.number}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-tertiary)',
+                  marginTop: '1px'
+                }}>
+                  {parallelMode ? 'English (KJV)' : 'தமிழ் (BSI New Ortho)'}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileActiveVerseMenu(null)}
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: 'var(--bg-canvas)',
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Snippet Preview of the Selected Verse */}
+            <div style={{
+              fontSize: '0.84rem',
+              lineHeight: 1.5,
+              color: 'var(--text-primary)',
+              fontFamily: parallelMode ? 'var(--font-serif), Georgia, serif' : 'var(--font-tamil)',
+              maxHeight: '75px',
+              overflowY: 'auto',
+              padding: '8px 12px',
+              backgroundColor: 'var(--bg-canvas)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              fontStyle: 'italic',
+              opacity: 0.92
+            }}>
+              "{parallelMode && mobileActiveVerseMenu.kjvVerse ? mobileActiveVerseMenu.kjvVerse.text : mobileActiveVerseMenu.verse.text}"
+            </div>
+
+            {/* Action Buttons: Bookmark & Copy */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {/* Bookmark Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetVerse = mobileActiveVerseMenu.verse;
+                  toggleBookmark(targetVerse);
+                  setMobileActiveVerseMenu(null);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: mobileActiveVerseMenu.isBookmarked ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                  border: `1px solid ${mobileActiveVerseMenu.isBookmarked ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  color: mobileActiveVerseMenu.isBookmarked ? 'var(--accent)' : 'var(--text-primary)',
+                  fontWeight: 750,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {mobileActiveVerseMenu.isBookmarked ? (
+                  <>
+                    <BookmarkCheck size={18} style={{ color: 'var(--accent)' }} />
+                    <span>{uiLang === 'ta' ? 'நீக்குக' : 'Bookmarked'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Bookmark size={18} />
+                    <span>{uiLang === 'ta' ? 'புக்மார்க்' : 'Bookmark'}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Copy Verse */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetVerse = mobileActiveVerseMenu.verse;
+                  copyVerseText(targetVerse);
+                  setMobileActiveVerseMenu(null);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: copiedVerseNum === mobileActiveVerseMenu.verse.number ? 'var(--accent)' : 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: copiedVerseNum === mobileActiveVerseMenu.verse.number ? 'var(--accent-contrast)' : 'var(--text-primary)',
+                  fontWeight: 750,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {copiedVerseNum === mobileActiveVerseMenu.verse.number ? (
+                  <>
+                    <Check size={18} />
+                    <span>{t.copied}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={18} />
+                    <span>{t.copy}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Read in Slide Mode Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const targetVerse = mobileActiveVerseMenu.verse;
+                const kjvV = mobileActiveVerseMenu.kjvVerse;
+                setFullscreenSlideVerse({
+                  bookCode: currentBookCode,
+                  chapter: currentChapter,
+                  verseNum: targetVerse.number,
+                  text: parallelMode && kjvV ? kjvV.text : targetVerse.text
+                });
+                window.history.pushState({ modal: 'fullscreen_verse' }, '');
+                enterFullscreenSlide();
+                setMobileActiveVerseMenu(null);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '11px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--accent)',
+                color: 'var(--accent-contrast)',
+                fontWeight: 750,
+                fontSize: '0.88rem',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <BookOpen size={16} />
+              <span>{uiLang === 'ta' ? 'ஸ்லைடு வடிவில் வாசிக்க' : 'Open in Slide Mode'}</span>
+            </button>
           </div>
         </div>
       )}
