@@ -6,10 +6,10 @@ import { SongReader } from './components/SongReader';
 import { ProjectorConsole } from './components/ProjectorConsole';
 import { DailyVerseSection } from './components/DailyVerseSection';
 import { ToolsSection } from './components/ToolsSection';
-import { QuickSearchModal } from './components/QuickSearchModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { AddSongModal } from './components/AddSongModal';
+import { InstallModal } from './components/InstallModal';
 import { PresenterToolbar } from './components/PresenterToolbar';
 import { ProjectorDisplay } from './components/ProjectorDisplay';
 import { useProjectorSync } from './hooks/useProjectorSync';
@@ -39,10 +39,66 @@ export function App() {
     return localStorage.getItem('worship_cloud_ui_lang') || 'ta';
   });
 
+  // Responsive mobile detection
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // PWA Install State & Event Listeners
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone;
+  });
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handlePromptInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const choiceResult = await installPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        setIsAppInstalled(true);
+      }
+      setInstallPrompt(null);
+    } else {
+      setIsInstallModalOpen(true);
+    }
+  };
+
   // Navigation State: 'home' | 'bible' | 'songs' | 'projector' | 'daily' | 'tools'
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('worship_cloud_active_tab') || 'home';
   });
+
+  // Guard: mobile does not have projector/live section
+  useEffect(() => {
+    if (isMobile && activeTab === 'projector') {
+      setActiveTab('bible');
+    }
+  }, [isMobile, activeTab]);
 
   const [booksMeta, setBooksMeta] = useState([]);
   const [songsIndex, setSongsIndex] = useState(null);
@@ -148,29 +204,21 @@ export function App() {
       .catch((err) => console.error('Failed to load bible-meta:', err));
   }, []);
 
-  // Load Songs Index lazily when needed
+  // Load Songs Index on mount so instant search is always ready
   useEffect(() => {
-    if (activeTab === 'songs' || activeTab === 'projector' || activeTab === 'tools' || isSearchOpen) {
-      if (!songsIndex) {
-        fetch('./data/songs/songs-index.json')
-          .then((r) => r.json())
-          .then((data) => setSongsIndex(data))
-          .catch((err) => console.error('Failed to load songs index:', err));
-      }
+    if (!songsIndex) {
+      fetch('./data/songs/songs-index.json')
+        .then((r) => r.json())
+        .then((data) => setSongsIndex(data))
+        .catch(() => {
+          const base = import.meta.env.BASE_URL || './';
+          fetch(`${base.replace(/\/$/, '')}/data/songs/songs-index.json`)
+            .then((r) => r.json())
+            .then((data) => setSongsIndex(data))
+            .catch((err) => console.error('Failed to load songs index:', err));
+        });
     }
-  }, [activeTab, isSearchOpen, songsIndex]);
-
-  // Global Keyboard shortcut: Ctrl+K or Cmd+K
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [songsIndex]);
 
   // Dedicated projector view (runs unconditionally after all hooks)
   if (isProjectorRoute) {
@@ -206,11 +254,10 @@ export function App() {
 
   return (
     <div style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Top Global Navigation Bar */}
+      {/* Top Global Navigation Bar with In-Place Search */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenSearch={() => setIsSearchOpen(true)}
         theme={theme}
         setTheme={setTheme}
         fontSize={fontSize}
@@ -221,6 +268,15 @@ export function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         user={auth.user}
         onOpenAuth={() => setIsAuthOpen(true)}
+        booksMeta={booksMeta}
+        songsIndex={combinedSongsIndex}
+        onSelectBibleReference={handleSelectBibleReference}
+        onSelectPage={handleSelectPage}
+        onSelectSong={handleSelectSong}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        onPromptInstall={handlePromptInstall}
+        isAppInstalled={isAppInstalled}
+        installPrompt={installPrompt}
       />
 
       {/* Main Content Area */}
@@ -242,6 +298,8 @@ export function App() {
             targetVerse={targetVerse}
             setTargetVerse={setTargetVerse}
             uiLang={uiLang}
+            theme={theme}
+            setTheme={setTheme}
           />
         )}
 
@@ -250,8 +308,11 @@ export function App() {
             songsIndex={combinedSongsIndex}
             userSongs={userSongs}
             fontSize={fontSize}
+            setFontSize={setFontSize}
             selectedSongInit={selectedSongForViewer}
             uiLang={uiLang}
+            theme={theme}
+            setTheme={setTheme}
             onOpenAddSong={() => setIsAddSongOpen(true)}
             onDeleteSong={handleDeleteCustomSong}
             user={auth.user}
@@ -259,7 +320,7 @@ export function App() {
           />
         )}
 
-        {activeTab === 'projector' && (
+        {activeTab === 'projector' && !isMobile && (
           <ProjectorConsole
             booksMeta={booksMeta}
             songsIndex={combinedSongsIndex}
@@ -287,8 +348,8 @@ export function App() {
         )}
       </main>
 
-      {/* Floating Presenter Toolbar */}
-      {activeTab !== 'projector' && (
+      {/* Floating Presenter Toolbar (Desktop only - hidden on mobile) */}
+      {!isMobile && activeTab !== 'projector' && (
         <PresenterToolbar
           activeSlide={projector.activeSlide}
           isBlackout={projector.isBlackout}
@@ -304,17 +365,6 @@ export function App() {
         />
       )}
 
-      {/* Global Quick Search Modal */}
-      <QuickSearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        booksMeta={booksMeta}
-        onSelectBibleReference={handleSelectBibleReference}
-        onSelectPage={handleSelectPage}
-        onSelectSong={handleSelectSong}
-        songsIndex={combinedSongsIndex}
-      />
-
       {/* Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
@@ -325,6 +375,8 @@ export function App() {
         setTheme={setTheme}
         fontSize={fontSize}
         setFontSize={setFontSize}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        isAppInstalled={isAppInstalled}
       />
 
       {/* Supabase & Google Auth Modal */}
@@ -343,6 +395,16 @@ export function App() {
         user={auth.user}
         onOpenAuth={() => setIsAuthOpen(true)}
         uiLang={uiLang}
+      />
+
+      {/* PWA Install & Add to Home Screen Modal */}
+      <InstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        uiLang={uiLang}
+        installPrompt={installPrompt}
+        onPromptInstall={handlePromptInstall}
+        isAppInstalled={isAppInstalled}
       />
     </div>
   );

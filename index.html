@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#d97706" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Worship Cloud" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Tamil:wght@500;600;700;800&family=Baloo+Thambi+2:wght@600;700;800&family=Catamaran:wght@600;700;800;900&family=Mukta+Malar:wght@600;700;800&family=Noto+Sans+Tamil:wght@600;700;800;900&family=Noto+Serif+Tamil:wght@600;700;800&family=Arima+Madurai:wght@700;800&family=Kavivanar&family=Hind+Madurai:wght@500;600;700&family=Pavanam&family=Coiny&family=Tiro+Tamil:ital@0;1&display=swap" />
@@ -12,5 +19,12 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
   </body>
 </html>

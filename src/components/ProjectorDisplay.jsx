@@ -229,7 +229,8 @@ export function ProjectorDisplay({ projector: propProjector }) {
               customGreeting={activeSlide.customGreeting || activeSlide.title}
               customVerse={activeSlide.customVerse || activeSlide.body}
               theme={theme}
-              bgType={activeSlide.bgType || 'texture'}
+              bgType={activeSlide.bgType || 'gradient'}
+              gradientBg={activeSlide.gradientBg}
               textureSrc={activeSlide.textureSrc || './images/card-backgrounds/sunbeams-golden.jpg'}
               bgOverlayOpacity={activeSlide.bgOverlayOpacity ?? 0.70}
               bgColor={activeSlide.backgroundColor || '#090d16'}
@@ -244,10 +245,12 @@ export function ProjectorDisplay({ projector: propProjector }) {
               format24h={activeSlide.format24h}
               showSeconds={activeSlide.showSeconds ?? true}
               theme={theme}
-              bgType={activeSlide.bgType || 'texture'}
+              bgType={activeSlide.bgType || 'gradient'}
+              gradientBg={activeSlide.gradientBg}
               textureSrc={activeSlide.textureSrc || './images/card-backgrounds/clouds-golden.jpg'}
               bgOverlayOpacity={activeSlide.bgOverlayOpacity ?? 0.70}
               bgColor={activeSlide.backgroundColor || '#090d16'}
+              animatedBg={activeSlide.animatedBg ?? true}
               uiLang={activeSlide.uiLang || 'ta'}
             />
           </div>

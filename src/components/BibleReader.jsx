@@ -14,7 +14,10 @@ import {
   X,
   Hash,
   CornerDownLeft,
-  Languages
+  Languages,
+  LayoutGrid,
+  MoreVertical,
+  Sliders
 } from 'lucide-react';
 import { getApproximateVersePage } from '../lib/biblePages';
 import { normalizeSearch } from '../lib/searchParser';
@@ -31,7 +34,9 @@ export function BibleReader({
   setFontSize,
   targetVerse,
   setTargetVerse,
-  uiLang = 'ta'
+  uiLang = 'ta',
+  theme,
+  setTheme
 }) {
   const t = translations[uiLang] || translations.ta;
 
@@ -56,6 +61,83 @@ export function BibleReader({
   useEffect(() => {
     setMobileSelectedBookCode(currentBookCode);
   }, [currentBookCode]);
+
+  // Mobile Fullscreen Landscape Verse Slide Reader State
+  const [fullscreenSlideVerse, setFullscreenSlideVerse] = useState(null); // { bookCode, chapter, verseNum, text }
+  const [isNavModalOpen, setIsNavModalOpen] = useState(false);
+  const [isBibleCustomizationOpen, setIsBibleCustomizationOpen] = useState(false);
+  const [navModalTab, setNavModalTab] = useState('verse'); // 'book' | 'chapter' | 'verse'
+  const [navModalBook, setNavModalBook] = useState(currentBookCode);
+  const [navModalChapter, setNavModalChapter] = useState(currentChapter);
+  const [navModalVerse, setNavModalVerse] = useState(1);
+  const [modalBookData, setModalBookData] = useState(null);
+
+  // Swipe detection for fullscreen slide
+  const slideTouchStartY = useRef(null);
+  const slideTouchStartX = useRef(null);
+
+  const handleSlideTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+      slideTouchStartY.current = e.touches[0].clientY;
+      slideTouchStartX.current = e.touches[0].clientX;
+    }
+  };
+
+  const handleSlideTouchEnd = (e) => {
+    if (slideTouchStartY.current === null || slideTouchStartX.current === null) return;
+    const deltaY = e.changedTouches[0].clientY - slideTouchStartY.current;
+    const deltaX = e.changedTouches[0].clientX - slideTouchStartX.current;
+    slideTouchStartY.current = null;
+    slideTouchStartX.current = null;
+
+    // Swiping up or down jumps to the first verse of current book and chapter
+    if (Math.abs(deltaY) > 40 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      setFullscreenSlideVerse((prev) => (prev ? { ...prev, verseNum: 1 } : null));
+      setNavModalVerse(1);
+    }
+  };
+
+  // Sync navigator modal values when slide verse changes
+  useEffect(() => {
+    if (fullscreenSlideVerse) {
+      setNavModalBook(fullscreenSlideVerse.bookCode);
+      setNavModalChapter(fullscreenSlideVerse.chapter);
+      setNavModalVerse(fullscreenSlideVerse.verseNum);
+    }
+  }, [fullscreenSlideVerse]);
+
+  // Load modal book data when user selects a different book in the navigator modal
+  useEffect(() => {
+    if (navModalBook === currentBookCode && taovbsiBook) {
+      setModalBookData(taovbsiBook);
+      return;
+    }
+    let active = true;
+    fetch(`./data/bible/taovbsi/${navModalBook}.json`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (active) setModalBookData(data);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [navModalBook, currentBookCode, taovbsiBook]);
+
+  // Device Hardware Back Button Listener to exit fullscreen slide mode
+  useEffect(() => {
+    const handlePopState = () => {
+      if (fullscreenSlideVerse) {
+        setFullscreenSlideVerse(null);
+        setIsNavModalOpen(false);
+        try {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [fullscreenSlideVerse]);
 
   // Sidebar state
   const [sidebarTab, setSidebarTab] = useState('books'); // 'books' | 'bookmarks'
@@ -278,6 +360,102 @@ export function BibleReader({
     }
   };
 
+  // Fullscreen Slide verse resolution & handlers
+  const currentSlideVerseText = useMemo(() => {
+    if (!fullscreenSlideVerse) return '';
+    const vNum = fullscreenSlideVerse.verseNum;
+    const tamilV = currentTamilChapter?.verses?.find((v) => v.number === vNum);
+    const kjvV = currentKjvChapter?.verses?.find((v) => v.number === vNum);
+    if (parallelMode && kjvV) return kjvV.text;
+    return tamilV?.text || fullscreenSlideVerse.text || '';
+  }, [fullscreenSlideVerse, currentTamilChapter, currentKjvChapter, parallelMode]);
+
+  const currentSlideBookMeta = useMemo(() => {
+    if (!fullscreenSlideVerse) return currentMeta;
+    return booksMeta.find((b) => b.code === fullscreenSlideVerse.bookCode) || currentMeta;
+  }, [fullscreenSlideVerse, booksMeta, currentMeta]);
+
+  const modalBookMeta = useMemo(() => {
+    return booksMeta.find((b) => b.code === navModalBook) || currentMeta;
+  }, [booksMeta, navModalBook, currentMeta]);
+
+  const modalSelectedChapterData = useMemo(() => {
+    return modalBookData?.chapters?.find((c) => c.number === navModalChapter);
+  }, [modalBookData, navModalChapter]);
+
+  const modalTotalVerses = modalSelectedChapterData?.verses?.length || 31;
+
+  const handleSlideNextVerse = () => {
+    if (!fullscreenSlideVerse) return;
+    const currentVerses = currentTamilChapter?.verses || [];
+    const currentTotal = currentVerses.length || 30;
+    const currentVNum = fullscreenSlideVerse.verseNum;
+
+    if (currentVNum < currentTotal) {
+      setFullscreenSlideVerse({
+        ...fullscreenSlideVerse,
+        verseNum: currentVNum + 1
+      });
+    } else {
+      const currentMetaItem = booksMeta.find((b) => b.code === currentBookCode);
+      const maxChapters = currentMetaItem?.chapters || 1;
+      if (currentChapter < maxChapters) {
+        onSelectBookChapter(currentBookCode, currentChapter + 1);
+        setFullscreenSlideVerse({
+          bookCode: currentBookCode,
+          chapter: currentChapter + 1,
+          verseNum: 1
+        });
+      } else {
+        const bIdx = booksMeta.findIndex((b) => b.code === currentBookCode);
+        if (bIdx < booksMeta.length - 1) {
+          const nextBook = booksMeta[bIdx + 1];
+          onSelectBookChapter(nextBook.code, 1);
+          setFullscreenSlideVerse({
+            bookCode: nextBook.code,
+            chapter: 1,
+            verseNum: 1
+          });
+        }
+      }
+    }
+  };
+
+  const handleSlidePrevVerse = () => {
+    if (!fullscreenSlideVerse) return;
+    const currentVNum = fullscreenSlideVerse.verseNum;
+
+    if (currentVNum > 1) {
+      setFullscreenSlideVerse({
+        ...fullscreenSlideVerse,
+        verseNum: currentVNum - 1
+      });
+    } else {
+      if (currentChapter > 1) {
+        const prevCh = currentChapter - 1;
+        const prevChData = taovbsiBook?.chapters?.find((c) => c.number === prevCh);
+        const lastVNum = prevChData?.verses?.length || 25;
+        onSelectBookChapter(currentBookCode, prevCh);
+        setFullscreenSlideVerse({
+          bookCode: currentBookCode,
+          chapter: prevCh,
+          verseNum: lastVNum
+        });
+      } else {
+        const bIdx = booksMeta.findIndex((b) => b.code === currentBookCode);
+        if (bIdx > 0) {
+          const prevBook = booksMeta[bIdx - 1];
+          onSelectBookChapter(prevBook.code, prevBook.chapters);
+          setFullscreenSlideVerse({
+            bookCode: prevBook.code,
+            chapter: prevBook.chapters,
+            verseNum: 1
+          });
+        }
+      }
+    }
+  };
+
   // Select a book from dropdown/search and auto-focus the Jump Box
   const selectBookAndFocusJump = (bookCode) => {
     onSelectBookChapter(bookCode, 1);
@@ -350,7 +528,7 @@ export function BibleReader({
       flexDirection: isMobile ? 'column' : undefined,
       gridTemplateColumns: isMobile ? undefined : '1fr 390px',
       gap: isMobile ? '0' : '1.25rem',
-      padding: isMobile ? '0 0.5rem 0.5rem 0.5rem' : '0 1.5rem 0.5rem 1.5rem',
+      padding: isMobile ? '8px 0.5rem 0.5rem 0.5rem' : '0 1.5rem 0.5rem 1.5rem',
       width: '100%',
       height: '100%',
       maxHeight: '100%',
@@ -374,41 +552,170 @@ export function BibleReader({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0.65rem 0.95rem',
+            padding: '0.65rem 0.85rem',
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '10px',
             border: '1px solid var(--border-subtle)',
-            marginBottom: '0.5rem',
-            boxShadow: 'var(--shadow-sm)'
+            marginBottom: '0.45rem',
+            boxShadow: 'var(--shadow-sm)',
+            gap: '8px'
           }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Tappable Title Area for Book & Chapter Drawer Sheet */}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileSelectedBookCode(currentBookCode);
+                setIsMobileSheetOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textAlign: 'left',
+                minWidth: 0,
+                flex: 1
+              }}
+              title={uiLang === 'ta' ? 'புத்தகத்தை மாற்ற கிளிக் செய்க' : 'Click to select book & chapter'}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', maxWidth: '100%' }}>
                 <h1 style={{
-                  fontSize: '1.25rem',
+                  fontSize: '1.22rem',
                   fontWeight: 800,
                   color: 'var(--text-primary)',
                   letterSpacing: '-0.02em',
                   lineHeight: 1.2,
-                  margin: 0
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>
                   {parallelMode ? currentMeta?.english : currentMeta?.name} {currentChapter}
                 </h1>
+                <ChevronDown size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.70rem', color: 'var(--text-tertiary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {parallelMode ? currentMeta?.name : currentMeta?.english} · {currentTamilChapter?.verses?.length || 0} {t.verses}
               </div>
-            </div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              backgroundColor: 'var(--accent-light)',
-              color: 'var(--accent)',
-              fontSize: '0.72rem',
-              fontWeight: 800
-            }}>
-              {parallelMode ? 'KJV & BSI' : 'BSI Ortho'}
+            </button>
+
+            {/* Compact Action Icons: Prev Chapter, Next Chapter, Language Toggle, Jump */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+              {/* Prev Chapter */}
+              <button
+                type="button"
+                onClick={handlePrevChapter}
+                title={t.prevChapter}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '7px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <ChevronLeft size={17} />
+              </button>
+
+              {/* Next Chapter */}
+              <button
+                type="button"
+                onClick={handleNextChapter}
+                title={t.nextChapter}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '7px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <ChevronRight size={17} />
+              </button>
+
+              {/* Language Toggle: Icon only */}
+              <button
+                type="button"
+                onClick={() => setParallelMode(!parallelMode)}
+                title={parallelMode ? 'Switch to Tamil' : 'Switch to English (KJV)'}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '7px',
+                  backgroundColor: parallelMode ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                  border: `1px solid ${parallelMode ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  color: parallelMode ? 'var(--accent)' : 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <Languages size={16} />
+              </button>
+
+              {/* Jump Button: Icon only */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileJumpInput('');
+                  setIsJumpModalOpen(true);
+                }}
+                title="Jump to verse"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '7px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--accent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <Hash size={16} />
+              </button>
+
+              {/* 3-Dot Customization Button: Font size, themes, options */}
+              <button
+                type="button"
+                onClick={() => setIsBibleCustomizationOpen(true)}
+                title={uiLang === 'ta' ? 'வேதாகம அமைப்புகள் (3-dot)' : 'Bible Customization & Options'}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '7px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <MoreVertical size={16} />
+              </button>
             </div>
           </div>
         ) : (
@@ -537,6 +844,22 @@ export function BibleReader({
                 <div
                   key={verse.number}
                   ref={(el) => (verseRefs.current[verse.number] = el)}
+                  onClick={() => {
+                    if (isMobile) {
+                      setFullscreenSlideVerse({
+                        bookCode: currentBookCode,
+                        chapter: currentChapter,
+                        verseNum: verse.number,
+                        text: parallelMode && kjvVerse ? kjvVerse.text : verse.text
+                      });
+                      window.history.pushState({ modal: 'fullscreen_verse' }, '');
+                      try {
+                        if (screen.orientation && screen.orientation.lock) {
+                          screen.orientation.lock('landscape').catch(() => {});
+                        }
+                      } catch (e) {}
+                    }
+                  }}
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '38px 1fr auto',
@@ -546,7 +869,8 @@ export function BibleReader({
                     backgroundColor: isBookmarked ? 'var(--accent-light)' : 'var(--bg-surface)',
                     border: isBookmarked ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
                     transition: 'all 0.15s ease',
-                    alignItems: 'start'
+                    alignItems: 'start',
+                    cursor: isMobile ? 'pointer' : 'default'
                   }}
                   onMouseEnter={(e) => {
                     if (!isBookmarked) e.currentTarget.style.borderColor = 'var(--border-strong)';
@@ -582,7 +906,10 @@ export function BibleReader({
                   {/* Actions on Verse */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <button
-                      onClick={() => toggleBookmark(verse)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBookmark(verse);
+                      }}
                       title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
                       style={{
                         padding: '6px',
@@ -596,7 +923,10 @@ export function BibleReader({
                     </button>
 
                     <button
-                      onClick={() => copyVerseText(verse)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyVerseText(verse);
+                      }}
                       title={t.copy}
                       style={{
                         padding: '6px',
@@ -1136,503 +1466,221 @@ export function BibleReader({
       )}
 
       {/* ===================================================================== */}
-      {/* MOBILE COMPANION ANIMATED BOTTOM BAR                                  */}
-      {/* ===================================================================== */}
-      {isMobile && (
-        <nav style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '58px',
-          backgroundColor: 'var(--bg-surface)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderTop: '1px solid var(--border-subtle)',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.22)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 8px',
-          zIndex: 80,
-          gap: '6px'
-        }}>
-          {/* Prev Chapter */}
-          <button
-            onClick={handlePrevChapter}
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--bg-canvas)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flexShrink: 0
-            }}
-            title={t.prevChapter}
-          >
-            <ChevronLeft size={20} />
-          </button>
-
-          {/* Book Name & Chapter Button (Prominent Center Action) */}
-          <button
-            onClick={() => {
-              setMobileSelectedBookCode(currentBookCode);
-              setIsMobileSheetOpen(true);
-            }}
-            style={{
-              flex: 1,
-              height: '40px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--accent-light)',
-              border: '1px solid var(--accent)',
-              color: 'var(--accent)',
-              fontWeight: 800,
-              fontSize: '0.86rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              padding: '0 8px',
-              overflow: 'hidden'
-            }}
-          >
-            <BookOpen size={16} style={{ flexShrink: 0 }} />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {parallelMode ? currentMeta?.english : currentMeta?.name} {currentChapter}
-            </span>
-            <ChevronDown size={14} style={{ flexShrink: 0, opacity: 0.8 }} />
-          </button>
-
-          {/* Next Chapter */}
-          <button
-            onClick={handleNextChapter}
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--bg-canvas)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flexShrink: 0
-            }}
-            title={t.nextChapter}
-          >
-            <ChevronRight size={20} />
-          </button>
-
-          {/* Language Toggle (EN / தமிழ்) */}
-          <button
-            onClick={() => setParallelMode(!parallelMode)}
-            style={{
-              height: '38px',
-              padding: '0 8px',
-              borderRadius: '8px',
-              backgroundColor: parallelMode ? 'var(--accent)' : 'var(--bg-canvas)',
-              border: `1px solid ${parallelMode ? 'var(--accent)' : 'var(--border-subtle)'}`,
-              color: parallelMode ? 'var(--accent-contrast)' : 'var(--text-primary)',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer',
-              flexShrink: 0
-            }}
-            title={parallelMode ? 'Switch to Tamil' : 'Switch to English (KJV)'}
-          >
-            <Languages size={15} />
-            <span>{parallelMode ? 'EN' : 'தமிழ்'}</span>
-          </button>
-
-          {/* Jump Button */}
-          <button
-            onClick={() => {
-              setMobileJumpInput('');
-              setIsJumpModalOpen(true);
-            }}
-            style={{
-              height: '38px',
-              padding: '0 9px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--bg-canvas)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              fontWeight: 750,
-              fontSize: '0.78rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer',
-              flexShrink: 0
-            }}
-            title="Jump to verse"
-          >
-            <Hash size={14} style={{ color: 'var(--accent)' }} />
-            <span>Jump</span>
-          </button>
-        </nav>
-      )}
-
-      {/* ===================================================================== */}
-      {/* MOBILE BOOK & CHAPTER BOTTOM SHEET DRAWER                             */}
+      {/* MOBILE FULLSCREEN BOOK & CHAPTER SELECTOR                             */}
       {/* ===================================================================== */}
       {isMobile && isMobileSheetOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          zIndex: 100,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          animation: 'fadeIn 0.2s ease'
-        }}
-        onClick={() => setIsMobileSheetOpen(false)}
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'var(--bg-surface)',
+            zIndex: 300,
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100vw',
+            height: '100vh',
+            overflow: 'hidden',
+            animation: 'fadeIn 0.15s ease'
+          }}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderTopLeftRadius: '18px',
-              borderTopRightRadius: '18px',
-              maxHeight: '86vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.4)',
-              borderTop: '1px solid var(--border-strong)',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Sheet Handle Bar */}
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px 0' }}>
-              <div style={{ width: '40px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--border-strong)' }} />
+          {/* Header: Title + Close Button */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.85rem 1rem',
+            backgroundColor: 'var(--bg-surface)',
+            borderBottom: '1px solid var(--border-subtle)',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={20} style={{ color: 'var(--accent)' }} />
+              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {uiLang === 'ta' ? 'புத்தகம் & அதிகாரம்' : 'Books & Chapters'}
+              </h2>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileSheetOpen(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-tertiary)',
+                padding: '6px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={22} />
+            </button>
+          </div>
 
-            {/* Header: Title + Close Button */}
+          {/* Search Input (No OT/NT toggle bar at all - always shows all 66 books) */}
+          <div style={{ padding: '0.65rem 1rem', backgroundColor: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.5rem 1rem',
-              borderBottom: '1px solid var(--border-subtle)'
+              gap: '8px',
+              backgroundColor: 'var(--bg-canvas)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              padding: '0 10px',
+              minHeight: '42px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <BookOpen size={18} style={{ color: 'var(--accent)' }} />
-                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {uiLang === 'ta' ? 'புத்தகம் & அதிகாரம்' : 'Books & Chapters'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsMobileSheetOpen(false)}
+              <Search size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder={uiLang === 'ta' ? 'புத்தகம் (பெயர் அல்லது எண் 1-66)...' : 'Book name or serial 1-66...'}
+                value={bookSearch}
+                onChange={(e) => setBookSearch(e.target.value)}
                 style={{
+                  border: 'none',
+                  outline: 'none',
                   background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-tertiary)',
-                  padding: '6px',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
+                  fontSize: '0.88rem',
+                  color: 'var(--text-primary)',
+                  width: '100%',
+                  fontWeight: 650
                 }}
-              >
-                <X size={20} />
-              </button>
+              />
+              {bookSearch && (
+               <button
+                 type="button"
+                 onClick={() => setBookSearch('')}
+                 style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px' }}
+               >
+                 <X size={16} />
+               </button>
+              )}
             </div>
+          </div>
 
-            {/* Sub-tabs: Books vs Bookmarks */}
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-canvas)' }}>
-              <button
-                onClick={() => setSidebarTab('books')}
-                style={{
-                  flex: 1,
-                  padding: '9px 12px',
-                  fontSize: '0.82rem',
-                  fontWeight: 750,
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: sidebarTab === 'books' ? 'var(--accent)' : 'var(--text-tertiary)',
-                  borderBottom: sidebarTab === 'books' ? '2px solid var(--accent)' : 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                {t.books}
-              </button>
-              <button
-                onClick={() => setSidebarTab('bookmarks')}
-                style={{
-                  flex: 1,
-                  padding: '9px 12px',
-                  fontSize: '0.82rem',
-                  fontWeight: 750,
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: sidebarTab === 'bookmarks' ? 'var(--accent)' : 'var(--text-tertiary)',
-                  borderBottom: sidebarTab === 'bookmarks' ? '2px solid var(--accent)' : 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                {t.bookmarks} ({bookmarks.length})
-              </button>
-            </div>
-
-            {/* TAB CONTENT: BOOKS */}
-            {sidebarTab === 'books' && (
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', padding: '0.75rem', gap: '10px' }}>
-                {/* Search Bar + Testament Filter */}
-                <div style={{ display: 'flex', gap: '6px', backgroundColor: 'var(--bg-canvas)', borderRadius: '6px', padding: '3px' }}>
-                  <button
-                    onClick={() => setBookFilterTab('all')}
-                    style={{
-                      flex: 1,
-                      padding: '5px 0',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      borderRadius: '4px',
-                      border: 'none',
-                      color: bookFilterTab === 'all' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
-                      backgroundColor: bookFilterTab === 'all' ? 'var(--accent)' : 'transparent',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {t.all} (66)
-                  </button>
-                  <button
-                    onClick={() => setBookFilterTab('OT')}
-                    style={{
-                      flex: 1,
-                      padding: '5px 0',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      borderRadius: '4px',
-                      border: 'none',
-                      color: bookFilterTab === 'OT' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
-                      backgroundColor: bookFilterTab === 'OT' ? 'var(--accent)' : 'transparent',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {t.oldTestament} (39)
-                  </button>
-                  <button
-                    onClick={() => setBookFilterTab('NT')}
-                    style={{
-                      flex: 1,
-                      padding: '5px 0',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      borderRadius: '4px',
-                      border: 'none',
-                      color: bookFilterTab === 'NT' ? 'var(--accent-contrast)' : 'var(--text-secondary)',
-                      backgroundColor: bookFilterTab === 'NT' ? 'var(--accent)' : 'transparent',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {t.newTestament} (27)
-                  </button>
+          {/* Selected Book's Chapters Grid (Prominently displayed) */}
+          {(() => {
+            const activeMeta = booksMeta.find((b) => b.code === mobileSelectedBookCode) || currentMeta;
+            return (
+              <div style={{
+                backgroundColor: 'var(--bg-canvas)',
+                padding: '0.75rem 1rem',
+                borderBottom: '1px solid var(--border-subtle)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                flexShrink: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--accent)' }}>
+                    {parallelMode ? activeMeta?.english : activeMeta?.name} ({activeMeta?.chapters} {t.chapters})
+                  </span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                    {uiLang === 'ta' ? 'அதிகாரத்தைத் தொடவும்' : 'Tap chapter to open'}
+                  </span>
                 </div>
-
-                {/* Search Input */}
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  backgroundColor: 'var(--bg-canvas)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '8px',
-                  padding: '0 10px',
-                  minHeight: '40px'
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(10, 1fr)',
+                  gap: '5px',
+                  maxHeight: '160px',
+                  overflowY: 'auto',
+                  padding: '2px'
                 }}>
-                  <Search size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                  <input
-                    type="text"
-                    placeholder={uiLang === 'ta' ? 'புத்தகம் (பெயர் அல்லது எண் 1-66)...' : 'Book name or serial 1-66...'}
-                    value={bookSearch}
-                    onChange={(e) => setBookSearch(e.target.value)}
-                    style={{
-                      border: 'none',
-                      outline: 'none',
-                      background: 'transparent',
-                      fontSize: '0.85rem',
-                      color: 'var(--text-primary)',
-                      width: '100%'
-                    }}
-                  />
-                  {bookSearch && (
-                    <button
-                      onClick={() => setBookSearch('')}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px' }}
-                    >
-                      <X size={15} />
-                    </button>
-                  )}
-                </div>
-
-                {/* ACTIVE SELECTED BOOK & CHAPTERS GRID */}
-                {(() => {
-                  const activeMeta = booksMeta.find((b) => b.code === mobileSelectedBookCode) || currentMeta;
-                  return (
-                    <div style={{
-                      backgroundColor: 'var(--bg-canvas)',
-                      borderRadius: '10px',
-                      border: '1px solid var(--accent)',
-                      padding: '0.65rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--accent)' }}>
-                          {parallelMode ? activeMeta?.english : activeMeta?.name} ({activeMeta?.chapters} {t.chapters})
-                        </span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
-                          {uiLang === 'ta' ? 'அதிகாரம் தொடவும்' : 'Tap chapter'}
-                        </span>
-                      </div>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))',
-                        gap: '5px',
-                        maxHeight: '140px',
-                        overflowY: 'auto',
-                        padding: '2px'
-                      }}>
-                        {Array.from({ length: activeMeta?.chapters || 1 }, (_, i) => i + 1).map((ch) => {
-                          const isCurrent = activeMeta.code === currentBookCode && ch === currentChapter;
-                          return (
-                            <button
-                              key={ch}
-                              onClick={() => {
-                                onSelectBookChapter(activeMeta.code, ch);
-                                setIsMobileSheetOpen(false);
-                              }}
-                              style={{
-                                height: '34px',
-                                borderRadius: '6px',
-                                border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                                backgroundColor: isCurrent ? 'var(--accent)' : 'var(--bg-surface)',
-                                color: isCurrent ? 'var(--accent-contrast)' : 'var(--text-primary)',
-                                fontWeight: isCurrent ? 800 : 600,
-                                fontSize: '0.82rem',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {ch}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* SCROLLABLE LIST OF ALL BOOKS */}
-                <div style={{ flex: 1, overflowY: 'auto', maxHeight: '200px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {filteredBooks.map((b) => {
-                    const isSelected = b.code === mobileSelectedBookCode;
+                  {Array.from({ length: activeMeta?.chapters || 1 }, (_, i) => i + 1).map((ch) => {
+                    const isCurrent = activeMeta.code === currentBookCode && ch === currentChapter;
                     return (
                       <button
-                        key={b.code}
-                        onClick={() => setMobileSelectedBookCode(b.code)}
+                        key={ch}
+                        type="button"
+                        onClick={() => {
+                          onSelectBookChapter(activeMeta.code, ch);
+                          setIsMobileSheetOpen(false);
+                        }}
                         style={{
+                          height: '34px',
+                          borderRadius: '6px',
+                          border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                          backgroundColor: isCurrent ? 'var(--accent)' : 'var(--bg-surface)',
+                          color: isCurrent ? 'var(--accent-contrast)' : 'var(--text-primary)',
+                          fontWeight: isCurrent ? 800 : 700,
+                          fontSize: '0.84rem',
+                          cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          backgroundColor: isSelected ? 'var(--accent-light)' : 'var(--bg-canvas)',
-                          border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                          color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
-                          fontWeight: isSelected ? 800 : 600,
-                          fontSize: '0.82rem',
-                          cursor: 'pointer',
-                          textAlign: 'left'
+                          justifyContent: 'center'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', width: '22px' }}>
-                            {b.index !== undefined ? b.index + 1 : (booksMeta.indexOf(b) + 1)}
-                          </span>
-                          <span>{parallelMode ? b.english : b.name}</span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
-                            ({parallelMode ? b.name : b.english})
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
-                          {b.chapters} ch
-                        </span>
+                        {ch}
                       </button>
                     );
                   })}
                 </div>
               </div>
-            )}
+            );
+          })()}
 
-            {/* TAB CONTENT: BOOKMARKS */}
-            {sidebarTab === 'bookmarks' && (
-              <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem', maxHeight: '350px' }}>
-                {bookmarks.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
-                    <Bookmark size={24} style={{ margin: '0 auto 6px auto', opacity: 0.5 }} />
-                    {t.noBookmarks}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {bookmarks.map((bm) => (
-                      <div
-                        key={bm.id}
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          backgroundColor: 'var(--bg-canvas)',
-                          border: '1px solid var(--border-subtle)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '6px'
-                        }}
-                      >
-                        <button
-                          onClick={() => {
-                            onSelectBookChapter(bm.bookCode, bm.chapter);
-                            if (setTargetVerse) setTargetVerse(bm.verseNumber);
-                            setIsMobileSheetOpen(false);
-                          }}
-                          style={{
-                            fontWeight: 750,
-                            fontSize: '0.82rem',
-                            color: 'var(--accent)',
-                            textAlign: 'left',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}
-                        >
-                          {bm.bookName} {bm.chapter}:{bm.verseNumber}
-                        </button>
-                        <button
-                          onClick={() => removeBookmark(bm.id)}
-                          style={{ color: 'var(--text-tertiary)', background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Scrollable List of ALL 66 Books (Always shows all 66 books, no OT/NT filter) */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0.65rem 1rem', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            {booksMeta
+              .filter((b) => {
+                if (!bookSearch.trim()) return true;
+                const q = bookSearch.trim().toLowerCase();
+                const num = parseInt(q, 10);
+                if (!isNaN(num)) {
+                  const bIdx = booksMeta.indexOf(b) + 1;
+                  return bIdx === num;
+                }
+                return (
+                  b.name?.toLowerCase().includes(q) ||
+                  b.english?.toLowerCase().includes(q) ||
+                  b.code?.toLowerCase().includes(q)
+                );
+              })
+              .map((b) => {
+                const isSelected = b.code === mobileSelectedBookCode;
+                return (
+                  <button
+                    key={b.code}
+                    type="button"
+                    onClick={() => setMobileSelectedBookCode(b.code)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: isSelected ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                      border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                      color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+                      fontWeight: isSelected ? 800 : 650,
+                      fontSize: '0.86rem',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.12s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: isSelected ? 'var(--accent)' : 'var(--text-tertiary)',
+                        width: '24px',
+                        textAlign: 'center'
+                      }}>
+                        {booksMeta.indexOf(b) + 1}
+                      </span>
+                      <span>{parallelMode ? b.english : b.name}</span>
+                      <span style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)' }}>
+                        ({parallelMode ? b.name : b.english})
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+                      {b.chapters} ch
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}
@@ -1755,6 +1803,706 @@ export function BibleReader({
               >
                 {uiLang === 'ta' ? 'தாவுக' : 'Jump'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MOBILE FULLSCREEN LANDSCAPE VERSE SLIDE READER                        */}
+      {/* ===================================================================== */}
+      {isMobile && fullscreenSlideVerse && (
+        <div
+          className="verse-landscape-wrapper"
+          onTouchStart={handleSlideTouchStart}
+          onTouchEnd={handleSlideTouchEnd}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 500,
+            backgroundColor: '#0a0f1d',
+            color: '#ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            userSelect: 'none',
+            WebkitUserSelect: 'none'
+          }}
+        >
+          {/* Orientation handling stylesheet */}
+          <style>{`
+            @media (max-width: 768px) and (orientation: portrait) {
+              .verse-landscape-wrapper {
+                width: 100vh !important;
+                height: 100vw !important;
+                transform: rotate(90deg) translate(0, -100vw) !important;
+                transform-origin: top left !important;
+              }
+            }
+            @media (max-width: 768px) and (orientation: landscape) {
+              .verse-landscape-wrapper {
+                width: 100vw !important;
+                height: 100vh !important;
+                transform: none !important;
+              }
+            }
+          `}</style>
+
+          {/* Ambient Slide Background */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse at center, rgba(180, 83, 9, 0.12) 0%, rgba(10, 15, 29, 0.98) 75%)',
+            pointerEvents: 'none'
+          }} />
+
+          {/* Top-Right 50% Opacity Grid Button: Opens Navigator Modal */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setNavModalTab('verse');
+              setIsNavModalOpen(true);
+            }}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              zIndex: 520,
+              opacity: 0.5,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '10px',
+              width: '42px',
+              height: '42px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)'
+            }}
+            title={uiLang === 'ta' ? 'புத்தகம், அதிகாரம், வசனம் மாற்ற' : 'Select Book, Chapter, Verse'}
+          >
+            <LayoutGrid size={22} />
+          </button>
+
+          {/* Main Slide Reading Area: Pure Verse Text + Reference */}
+          <div
+            style={{
+              flex: 1,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2.5rem 4rem 2rem 4rem',
+              boxSizing: 'border-box',
+              position: 'relative',
+              zIndex: 505
+            }}
+          >
+            {/* Left Invisible Tap Zone for Previous Verse */}
+            <div
+              onClick={handleSlidePrevVerse}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '45%',
+                height: '100%',
+                cursor: 'pointer',
+                zIndex: 506
+              }}
+              title="Previous Verse"
+            />
+
+            {/* Right Invisible Tap Zone for Next Verse */}
+            <div
+              onClick={handleSlideNextVerse}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '45%',
+                height: '100%',
+                cursor: 'pointer',
+                zIndex: 506
+              }}
+              title="Next Verse"
+            />
+
+            {/* Centered Verse Content */}
+            <div style={{
+              maxWidth: '920px',
+              textAlign: 'center',
+              zIndex: 507,
+              pointerEvents: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <p style={{
+                fontSize: `${Math.max(22, Math.min(36, (fontSize || 19) * 1.45))}px`,
+                lineHeight: 1.75,
+                fontWeight: 600,
+                color: '#f8fafc',
+                margin: 0,
+                fontFamily: parallelMode ? 'var(--font-serif), Georgia, serif' : 'var(--font-tamil)',
+                letterSpacing: '0.01em',
+                textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)'
+              }}>
+                {currentSlideVerseText}
+              </p>
+
+              {/* Clean Reference Tag */}
+              <div style={{
+                fontSize: '1.05rem',
+                fontWeight: 800,
+                color: 'var(--accent)',
+                letterSpacing: '0.04em',
+                opacity: 0.95
+              }}>
+                {parallelMode ? currentSlideBookMeta?.english : currentSlideBookMeta?.name} {fullscreenSlideVerse.chapter}:{fullscreenSlideVerse.verseNum}
+              </div>
+            </div>
+          </div>
+
+          {/* =================================================================== */}
+          {/* THE NAVIGATOR MODAL (Matching the 3 Provided Designs)               */}
+          {/* =================================================================== */}
+          {isNavModalOpen && (
+            <div
+              onClick={() => setIsNavModalOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.68)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                animation: 'fadeIn 0.15s ease'
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '92%',
+                  maxWidth: '740px',
+                  maxHeight: '88vh',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '22px',
+                  boxShadow: '0 24px 50px rgba(0, 0, 0, 0.45)',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Header Breadcrumbs: BOOK > CHAPTER > VERSE + [X] */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  marginBottom: '14px',
+                  flexShrink: 0
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                    {/* 1. BOOK BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => setNavModalTab('book')}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        backgroundColor: navModalTab === 'book' ? 'var(--accent)' : '#ffffff',
+                        border: navModalTab === 'book' ? 'none' : '1px solid #e5e7eb',
+                        color: navModalTab === 'book' ? '#ffffff' : '#111827',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span style={{
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.05em',
+                        color: navModalTab === 'book' ? 'rgba(255,255,255,0.85)' : '#6b7280',
+                        textTransform: 'uppercase'
+                      }}>
+                        BOOK
+                      </span>
+                      <span style={{
+                        fontSize: '0.92rem',
+                        fontWeight: 800,
+                        marginTop: '2px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%'
+                      }}>
+                        {parallelMode ? modalBookMeta?.english : modalBookMeta?.name}
+                      </span>
+                    </button>
+
+                    <ChevronRight size={15} style={{ color: '#9ca3af', flexShrink: 0 }} />
+
+                    {/* 2. CHAPTER BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => setNavModalTab('chapter')}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        backgroundColor: navModalTab === 'chapter' ? 'var(--accent)' : '#ffffff',
+                        border: navModalTab === 'chapter' ? 'none' : '1px solid #e5e7eb',
+                        color: navModalTab === 'chapter' ? '#ffffff' : '#111827',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span style={{
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.05em',
+                        color: navModalTab === 'chapter' ? 'rgba(255,255,255,0.85)' : '#6b7280',
+                        textTransform: 'uppercase'
+                      }}>
+                        CHAPTER
+                      </span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: '2px' }}>
+                        {navModalChapter}
+                      </span>
+                    </button>
+
+                    <ChevronRight size={15} style={{ color: '#9ca3af', flexShrink: 0 }} />
+
+                    {/* 3. VERSE BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => setNavModalTab('verse')}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        backgroundColor: navModalTab === 'verse' ? 'var(--accent)' : '#ffffff',
+                        border: navModalTab === 'verse' ? 'none' : '1px solid #e5e7eb',
+                        color: navModalTab === 'verse' ? '#ffffff' : '#111827',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span style={{
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.05em',
+                        color: navModalTab === 'verse' ? 'rgba(255,255,255,0.85)' : '#6b7280',
+                        textTransform: 'uppercase'
+                      }}>
+                        VERSE
+                      </span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: '2px' }}>
+                        {navModalVerse}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Close [X] Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsNavModalOpen(false)}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      border: '1px solid #e5e7eb',
+                      backgroundColor: '#ffffff',
+                      color: '#111827',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* MODAL GRID CONTENT: Exactly 10 columns for numbers */}
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 2px' }}>
+                  {/* TAB 1: BOOK SELECTION */}
+                  {navModalTab === 'book' && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(10, 1fr)',
+                      gap: '6px'
+                    }}>
+                      {booksMeta.map((b) => {
+                        const isSelected = b.code === navModalBook;
+                        return (
+                          <button
+                            key={b.code}
+                            type="button"
+                            onClick={() => {
+                              setNavModalBook(b.code);
+                              setNavModalChapter(1);
+                              setNavModalVerse(1);
+                              setNavModalTab('chapter');
+                            }}
+                            style={{
+                              height: '42px',
+                              padding: '0 2px',
+                              borderRadius: '12px',
+                              border: isSelected ? '1.5px solid var(--accent)' : '1px solid #e5e7eb',
+                              backgroundColor: isSelected ? '#ffedd5' : '#ffffff',
+                              color: isSelected ? 'var(--accent)' : '#111827',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              transition: 'all 0.12s ease'
+                            }}
+                            title={parallelMode ? b.english : b.name}
+                          >
+                            <span style={{
+                              width: '100%',
+                              textAlign: 'center',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              display: 'block',
+                              fontSize: '0.67rem',
+                              fontWeight: isSelected ? 800 : 650,
+                              lineHeight: 1.2
+                            }}>
+                              {parallelMode ? b.english : b.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* TAB 2: CHAPTER SELECTION (EXACTLY 10 COLUMNS) */}
+                  {navModalTab === 'chapter' && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(10, 1fr)',
+                      gap: '6px'
+                    }}>
+                      {Array.from({ length: modalBookMeta?.chapters || 1 }, (_, i) => i + 1).map((chNum) => {
+                        const totalCh = modalBookMeta?.chapters || 1;
+                        const isSelected = chNum === navModalChapter;
+                        const isSingleLast = (totalCh % 10 === 1) && (chNum === totalCh);
+                        return (
+                          <button
+                            key={chNum}
+                            type="button"
+                            onClick={() => {
+                              setNavModalChapter(chNum);
+                              setNavModalVerse(1);
+                              setNavModalTab('verse');
+                            }}
+                            style={{
+                              height: '42px',
+                              borderRadius: '12px',
+                              border: isSelected ? 'none' : '1px solid #e5e7eb',
+                              backgroundColor: isSelected ? 'var(--accent)' : '#ffffff',
+                              color: isSelected ? '#ffffff' : '#111827',
+                              fontSize: '0.94rem',
+                              fontWeight: isSelected ? 800 : 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gridColumn: isSingleLast ? '1 / -1' : undefined,
+                              transition: 'all 0.12s ease'
+                            }}
+                          >
+                            {chNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* TAB 3: VERSE SELECTION (EXACTLY 10 COLUMNS) */}
+                  {navModalTab === 'verse' && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(10, 1fr)',
+                      gap: '6px'
+                    }}>
+                      {Array.from({ length: modalTotalVerses }, (_, i) => i + 1).map((vNum) => {
+                        const isSelected = vNum === navModalVerse;
+                        const isSingleLast = (modalTotalVerses % 10 === 1) && (vNum === modalTotalVerses);
+                        return (
+                          <button
+                            key={vNum}
+                            type="button"
+                            onClick={() => {
+                              setNavModalVerse(vNum);
+                              if (navModalBook !== currentBookCode || navModalChapter !== currentChapter) {
+                                onSelectBookChapter(navModalBook, navModalChapter);
+                              }
+                              setFullscreenSlideVerse({
+                                bookCode: navModalBook,
+                                chapter: navModalChapter,
+                                verseNum: vNum
+                              });
+                              setIsNavModalOpen(false);
+                            }}
+                            style={{
+                              height: '42px',
+                              borderRadius: '12px',
+                              border: isSelected ? 'none' : '1px solid #e5e7eb',
+                              backgroundColor: isSelected ? 'var(--accent)' : '#ffffff',
+                              color: isSelected ? '#ffffff' : '#111827',
+                              fontSize: '0.94rem',
+                              fontWeight: isSelected ? 800 : 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gridColumn: isSingleLast ? '1 / -1' : undefined,
+                              transition: 'all 0.12s ease'
+                            }}
+                          >
+                            {vNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* BIBLE CUSTOMIZATION BOTTOM SHEET (3-DOT OPTIONS)                      */}
+      {/* ===================================================================== */}
+      {isBibleCustomizationOpen && (
+        <div
+          onClick={() => setIsBibleCustomizationOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 400,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            animation: 'fadeIn 0.15s ease'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              backgroundColor: 'var(--bg-surface)',
+              borderTopLeftRadius: '22px',
+              borderTopRightRadius: '22px',
+              border: '1px solid var(--border-subtle)',
+              padding: '1.2rem 1.25rem 1.8rem 1.25rem',
+              boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Drawer Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sliders size={18} style={{ color: 'var(--accent)' }} />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {uiLang === 'ta' ? 'வேதாகம அமைப்புகள்' : 'Bible Customization'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBibleCustomizationOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-tertiary)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 1. Font Size Adjuster */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                  {uiLang === 'ta' ? 'எழுத்து அளவு' : 'Font Size'}
+                </span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent)' }}>
+                  {fontSize}px
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setFontSize((s) => Math.max(14, s - 1))}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-canvas)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  A-
+                </button>
+                <input
+                  type="range"
+                  min="14"
+                  max="34"
+                  value={fontSize}
+                  onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
+                  style={{ flex: 1, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFontSize((s) => Math.min(34, s + 1))}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-canvas)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Theme Switcher */}
+            {setTheme && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                  {uiLang === 'ta' ? 'வண்ணத் தோற்றம்' : 'Color Theme'}
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[
+                    { id: 'parchment', name: 'Parchment', bg: '#fbf7ee', border: '#e6dfd1' },
+                    { id: 'ivory', name: 'Ivory Light', bg: '#fafafa', border: '#e5e7eb' },
+                    { id: 'night', name: 'Night Dark', bg: '#0d1117', border: '#30363d' }
+                  ].map((tItem) => (
+                    <button
+                      key={tItem.id}
+                      type="button"
+                      onClick={() => {
+                        setTheme(tItem.id);
+                        try { localStorage.setItem('ortho_theme', tItem.id); } catch {}
+                      }}
+                      style={{
+                        padding: '8px',
+                        borderRadius: '10px',
+                        border: theme === tItem.id ? '2px solid var(--accent)' : `1px solid ${tItem.border}`,
+                        backgroundColor: tItem.bg,
+                        color: tItem.id === 'night' ? '#ffffff' : '#111827',
+                        fontSize: '0.78rem',
+                        fontWeight: 750,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        boxShadow: theme === tItem.id ? '0 0 0 2px var(--accent-light)' : 'none'
+                      }}
+                    >
+                      {tItem.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Reading Language Toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                {uiLang === 'ta' ? 'வாசிக்கும் மொழி' : 'Reading Language'}
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setParallelMode(false)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: '8px',
+                    border: !parallelMode ? '2px solid var(--accent)' : '1px solid var(--border-subtle)',
+                    backgroundColor: !parallelMode ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                    color: !parallelMode ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  தமிழ் (BSI New Ortho)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setParallelMode(true)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: '8px',
+                    border: parallelMode ? '2px solid var(--accent)' : '1px solid var(--border-subtle)',
+                    backgroundColor: parallelMode ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                    color: parallelMode ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  English (KJV)
+                </button>
+              </div>
             </div>
           </div>
         </div>

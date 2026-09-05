@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
 export function ChurchClockView({
+  serviceTitle,
   format24h = false,
   showSeconds = true,
   _theme = 'midnight-gold',
   bgType = 'gradient',
   gradientBg = 'radial-gradient(ellipse at center, #1e1b4b 0%, #0f172a 45%, #020617 100%)',
+  textureSrc = '',
+  bgOverlayOpacity = 0.70,
   bgColor = '#090d16',
   animatedBg = true,
   isMini = false,
@@ -54,6 +57,7 @@ export function ChurchClockView({
         position: 'relative',
         width: '100%',
         height: '100%',
+        minHeight: isMini ? '200px' : '320px',
         backgroundColor: bgColor,
         background: bgType === 'gradient' ? gradientBg : bgColor,
         color: '#ffffff',
@@ -65,9 +69,33 @@ export function ChurchClockView({
         fontFamily: "'Noto Sans Tamil', 'Inter', sans-serif",
         userSelect: 'none',
         boxSizing: 'border-box',
-        padding: isMini ? '12px' : '2rem'
+        padding: isMini ? '10px 14px' : '2rem'
       }}
     >
+      {/* Texture Background Layer if active */}
+      {bgType === 'texture' && textureSrc && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url(${textureSrc})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            zIndex: 1
+          }}
+        />
+      )}
+
+      {/* Dark Overlay Layer for readability */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: bgType === 'texture' ? `rgba(0, 0, 0, ${bgOverlayOpacity})` : 'transparent',
+          zIndex: 2
+        }}
+      />
+
       {/* Optional Ambient Subtle Shimmer Wave */}
       {animatedBg && (
         <div
@@ -78,7 +106,7 @@ export function ChurchClockView({
             height: '200%',
             background: 'radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.08) 0%, rgba(56, 189, 248, 0.04) 35%, transparent 70%)',
             pointerEvents: 'none',
-            zIndex: 1,
+            zIndex: 2,
             animation: 'rotateClockBg 28s linear infinite'
           }}
         />
@@ -98,6 +126,23 @@ export function ChurchClockView({
           maxWidth: isMini ? '100%' : '1200px'
         }}
       >
+        {/* Optional Service Header Title */}
+        {serviceTitle && (
+          <div
+            style={{
+              fontSize: isMini ? '0.75rem' : 'clamp(1rem, 2vw, 1.6rem)',
+              fontWeight: 800,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: '#fde047',
+              marginBottom: isMini ? '6px' : '16px',
+              textShadow: '0 2px 8px rgba(0,0,0,0.85)'
+            }}
+          >
+            {serviceTitle}
+          </div>
+        )}
+
         {/* Massive Aesthetic Digital Clock Dial */}
         <div
           style={{
@@ -105,13 +150,15 @@ export function ChurchClockView({
             backdropFilter: 'blur(24px)',
             borderRadius: isMini ? '12px' : '28px',
             border: '1.5px solid rgba(245, 158, 11, 0.45)',
-            padding: isMini ? '12px 16px' : 'clamp(28px, 4.5vw, 56px) clamp(28px, 6vw, 76px)',
+            padding: isMini ? '10px 14px' : 'clamp(28px, 4.5vw, 56px) clamp(28px, 6vw, 76px)',
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 32px rgba(245, 158, 11, 0.1)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            position: 'relative'
+            position: 'relative',
+            width: isMini ? 'auto' : undefined,
+            maxWidth: '100%'
           }}
         >
           {/* Subtle Top Rim Sheen */}
@@ -140,14 +187,14 @@ export function ChurchClockView({
             }}
           >
             {/* Hours */}
-            <span style={{ fontSize: isMini ? 'clamp(2.6rem, 8.5vw, 3.8rem)' : 'clamp(5.5rem, 13vw, 11.5rem)' }}>
+            <span style={{ fontSize: isMini ? 'clamp(2rem, 6vw, 3.4rem)' : 'clamp(5.5rem, 13vw, 11.5rem)' }}>
               {hoursStr}
             </span>
 
             {/* Pulsing Colon */}
             <span
               style={{
-                fontSize: isMini ? 'clamp(2.2rem, 7.5vw, 3.4rem)' : 'clamp(5rem, 12vw, 10.5rem)',
+                fontSize: isMini ? 'clamp(1.8rem, 5.2vw, 3rem)' : 'clamp(5rem, 12vw, 10.5rem)',
                 color: '#fde047',
                 margin: '0 2px',
                 animation: 'pulseGlow 1s infinite'
@@ -157,7 +204,7 @@ export function ChurchClockView({
             </span>
 
             {/* Minutes */}
-            <span style={{ fontSize: isMini ? 'clamp(2.6rem, 8.5vw, 3.8rem)' : 'clamp(5.5rem, 13vw, 11.5rem)' }}>
+            <span style={{ fontSize: isMini ? 'clamp(2rem, 6vw, 3.4rem)' : 'clamp(5.5rem, 13vw, 11.5rem)' }}>
               {minutesStr}
             </span>
 
@@ -166,7 +213,7 @@ export function ChurchClockView({
               <>
                 <span
                   style={{
-                    fontSize: isMini ? 'clamp(2.2rem, 7.5vw, 3.4rem)' : 'clamp(5rem, 12vw, 10.5rem)',
+                    fontSize: isMini ? 'clamp(1.8rem, 5.2vw, 3rem)' : 'clamp(5rem, 12vw, 10.5rem)',
                     color: '#fde047',
                     margin: '0 2px',
                     animation: 'pulseGlow 1s infinite'
@@ -176,7 +223,7 @@ export function ChurchClockView({
                 </span>
                 <span
                   style={{
-                    fontSize: isMini ? 'clamp(2.2rem, 7vw, 3.2rem)' : 'clamp(4.5rem, 10.5vw, 9rem)',
+                    fontSize: isMini ? 'clamp(1.8rem, 5vw, 2.8rem)' : 'clamp(4.5rem, 10.5vw, 9rem)',
                     color: 'rgba(255, 255, 255, 0.88)'
                   }}
                 >
@@ -189,14 +236,14 @@ export function ChurchClockView({
             {!format24h && (
               <span
                 style={{
-                  fontSize: isMini ? 'clamp(0.9rem, 2.5vw, 1.3rem)' : 'clamp(1.5rem, 3.2vw, 2.6rem)',
+                  fontSize: isMini ? 'clamp(0.72rem, 1.8vw, 1.05rem)' : 'clamp(1.5rem, 3.2vw, 2.6rem)',
                   fontWeight: 900,
                   color: '#fde047',
                   marginLeft: isMini ? '4px' : '14px',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  padding: isMini ? '2px 6px' : '4px 12px',
-                  borderRadius: '8px',
+                  padding: isMini ? '2px 5px' : '4px 12px',
+                  borderRadius: '6px',
                   backgroundColor: 'rgba(245, 158, 11, 0.18)',
                   border: '1px solid rgba(245, 158, 11, 0.4)'
                 }}
@@ -209,13 +256,13 @@ export function ChurchClockView({
           {/* Localized Date Card inside the Clock Dial */}
           <div
             style={{
-              marginTop: isMini ? '8px' : '22px',
-              padding: isMini ? '4px 12px' : '8px 24px',
+              marginTop: isMini ? '6px' : '22px',
+              padding: isMini ? '3px 10px' : '8px 24px',
               borderRadius: '999px',
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               border: '1px solid rgba(255, 255, 255, 0.15)',
               color: '#cbd5e1',
-              fontSize: isMini ? '0.74rem' : 'clamp(1rem, 1.8vw, 1.45rem)',
+              fontSize: isMini ? '0.7rem' : 'clamp(1rem, 1.8vw, 1.45rem)',
               fontWeight: 650,
               letterSpacing: '0.03em'
             }}
@@ -227,3 +274,4 @@ export function ChurchClockView({
     </div>
   );
 }
+

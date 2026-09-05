@@ -355,7 +355,7 @@ export function DailyVerseSection({
   // Date & Tag Settings (Calendar icon removed, customizable format and editable tag text)
   const [dateFormat, setDateFormat] = useState('full');
   const [dateLang, setDateLang] = useState(isEn ? 'en' : 'ta');
-  const [cardTagText, setCardTagText] = useState(isEn ? 'DAILY BREAD' : 'அன்றாட மன்னாவும்');
+  const [cardTagText, setCardTagText] = useState('SHARON AG CHURCH');
   const [showCardTag, setShowCardTag] = useState(true);
 
   const [rightTab, setRightTab] = useState('design'); // 'design' | 'saved'
@@ -619,12 +619,20 @@ export function DailyVerseSection({
     const textToMeasure = contentMode === 'english_only' ? (kjvVerseText || '') : (tamilVerseText || '');
     const textLen = textToMeasure.length;
     let factor = 1;
-    if (aspectRatio === '16 / 9') {
-      factor = textLen > 160 ? 0.72 : (textLen > 110 ? 0.8 : 0.88);
-    } else if (aspectRatio === '1 / 1') {
-      factor = textLen > 180 ? 0.82 : (textLen > 120 ? 0.9 : 0.96);
-    } else if (aspectRatio === '4 / 5') {
-      factor = textLen > 220 ? 0.85 : 1;
+    if (isMobile) {
+      if (textLen > 220) factor = 0.42;
+      else if (textLen > 160) factor = 0.46;
+      else if (textLen > 110) factor = 0.50;
+      else if (textLen > 60) factor = 0.56;
+      else factor = 0.62;
+    } else {
+      if (aspectRatio === '16 / 9') {
+        factor = textLen > 160 ? 0.72 : (textLen > 110 ? 0.8 : 0.88);
+      } else if (aspectRatio === '1 / 1') {
+        factor = textLen > 180 ? 0.82 : (textLen > 120 ? 0.9 : 0.96);
+      } else if (aspectRatio === '4 / 5') {
+        factor = textLen > 220 ? 0.85 : 1;
+      }
     }
     if (lineSpacing > 1.85) {
       factor *= 0.93;
@@ -632,8 +640,9 @@ export function DailyVerseSection({
     if (lineSpacing > 2.2) {
       factor *= 0.92;
     }
-    return Math.max(15, Math.round(fontSize * factor));
-  }, [fontSize, aspectRatio, tamilVerseText, kjvVerseText, contentMode, lineSpacing]);
+    const computed = Math.round(fontSize * factor);
+    return isMobile ? Math.min(17, Math.max(12, computed)) : Math.max(15, computed);
+  }, [fontSize, aspectRatio, tamilVerseText, kjvVerseText, contentMode, lineSpacing, isMobile]);
 
   const displayDateString = formatVerseDate(dateFormat, dateLang);
 
@@ -644,24 +653,25 @@ export function DailyVerseSection({
       flexDirection: 'column',
       overflow: 'hidden',
       boxSizing: 'border-box',
-      padding: '0.45rem 0.85rem 0.5rem 0.85rem',
+      padding: isMobile ? '8px 0.5rem 64px 0.5rem' : '0.45rem 0.85rem 0.5rem 0.85rem',
       backgroundColor: 'var(--bg-canvas)'
     }}>
-      {/* 100% Top Box Card Header (matching Bible & Songs section box header) */}
-      <div style={{
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.65rem 1.15rem',
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: '10px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)',
-        flexWrap: 'wrap',
-        gap: '10px',
-        marginBottom: '0.65rem'
-      }}>
+      {/* 100% Top Box Card Header (Desktop Only: matching Bible & Songs section box header) */}
+      {!isMobile && (
+        <div style={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.65rem 1.15rem',
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: '10px',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-sm)',
+          flexWrap: 'wrap',
+          gap: '10px',
+          marginBottom: '0.65rem'
+        }}>
         {/* Left: Box Title (No extra badges or subtitle texts) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <SunMedium size={22} style={{ color: 'var(--accent)' }} />
@@ -819,28 +829,29 @@ export function DailyVerseSection({
             <span>{isEn ? 'Project' : 'திரையிடு'}</span>
           </button>
 
-          {/* Full Chapter */}
-          <button
-            onClick={() => onOpenInBible(currentVerseRef.bookCode, currentVerseRef.chapter, currentVerseRef.verse)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '7px 11px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--bg-canvas)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              fontSize: '0.8rem',
-              fontWeight: 650,
-              cursor: 'pointer'
-            }}
-          >
-            <BookOpen size={14} />
-            <span>{isEn ? 'Chapter' : 'அதிகாரம்'}</span>
-          </button>
+            {/* Full Chapter */}
+            <button
+              onClick={() => onOpenInBible(currentVerseRef.bookCode, currentVerseRef.chapter, currentVerseRef.verse)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '7px 11px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--bg-canvas)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: '0.8rem',
+                fontWeight: 650,
+                cursor: 'pointer'
+              }}
+            >
+              <BookOpen size={14} />
+              <span>{isEn ? 'Chapter' : 'அதிகாரம்'}</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Split Layout: Desktop 2-Column, Mobile Top Portion Fixed Preview + Bottom Portion Scrollable Controls */}
       <div style={{
@@ -850,16 +861,16 @@ export function DailyVerseSection({
         flexDirection: isMobile ? 'column' : undefined,
         gridTemplateColumns: isMobile ? undefined : 'minmax(350px, 1.25fr) minmax(330px, 1fr)',
         gap: isMobile ? '0.5rem' : '0.85rem',
-        overflow: 'hidden',
+        overflow: isMobile ? 'auto' : 'hidden',
         alignItems: 'stretch'
       }}>
         {/* ===================================================================== */}
         {/* PREVIEW CARD: Desktop Left Column (Scrollable), Mobile Fixed Top Portion */}
         {/* ===================================================================== */}
         <div style={{
-          height: isMobile ? '38vh' : '100%',
+          height: isMobile ? 'auto' : '100%',
           flexShrink: isMobile ? 0 : 1,
-          overflowY: isMobile ? 'auto' : 'auto',
+          overflowY: isMobile ? 'visible' : 'auto',
           overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -870,7 +881,8 @@ export function DailyVerseSection({
           width: '100%',
           backgroundColor: isMobile ? 'var(--bg-surface)' : 'transparent',
           borderRadius: isMobile ? '10px' : 0,
-          border: isMobile ? '1px solid var(--border-subtle)' : 'none'
+          border: isMobile ? '1px solid var(--border-subtle)' : 'none',
+          gap: isMobile ? '6px' : 0
         }}>
           {/* The Live Interactive Verse Card (No Watermark, No Calendar Icon, Auto-Fitting Font) */}
           <div
@@ -881,20 +893,19 @@ export function DailyVerseSection({
               borderRadius: isMobile ? '14px' : '20px',
               border: isDarkBg ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(0,0,0,0.1)',
               boxShadow: '0 15px 35px -8px rgba(0,0,0,0.45)',
-              padding: isMobile ? '1rem 1.2rem' : '2rem 2rem',
+              padding: isMobile ? '0.7rem 0.95rem' : '2rem 2rem',
               position: 'relative',
               overflow: 'hidden',
               width: '100%',
               maxWidth: isMobile ? '340px' : (aspectRatio === '16 / 9' ? '720px' : (aspectRatio === '1 / 1' ? '460px' : (aspectRatio === '4 / 5' ? '400px' : '560px'))),
               aspectRatio: aspectRatio === 'auto' ? undefined : aspectRatio,
-              minHeight: aspectRatio === 'auto' ? (isMobile ? '200px' : '340px') : undefined,
+              minHeight: aspectRatio === 'auto' ? (isMobile ? '160px' : '340px') : undefined,
+              maxHeight: isMobile ? '38vh' : undefined,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               transition: 'all 0.2s ease',
-              boxSizing: 'border-box',
-              transform: isMobile ? 'scale(0.88)' : 'none',
-              transformOrigin: 'center center'
+              boxSizing: 'border-box'
             }}
           >
             {/* Background Texture or Custom Image Layer */}
@@ -957,9 +968,9 @@ export function DailyVerseSection({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '1rem',
+                marginBottom: isMobile ? '0.3rem' : '1rem',
                 opacity: 0.9,
-                fontSize: '0.78rem',
+                fontSize: isMobile ? '0.68rem' : '0.78rem',
                 fontWeight: 650,
                 flexShrink: 0
               }}>
@@ -971,7 +982,7 @@ export function DailyVerseSection({
                 {/* Editable Header Tag Text */}
                 {showCardTag && cardTagText.trim() && (
                   <span style={{
-                    fontSize: '0.72rem',
+                    fontSize: isMobile ? '0.62rem' : '0.72rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.09em',
                     fontWeight: 800,
@@ -989,7 +1000,7 @@ export function DailyVerseSection({
                 flexDirection: 'column',
                 justifyContent: 'center',
                 textAlign: textAlign,
-                padding: '0.4rem 0',
+                padding: isMobile ? '0.15rem 0' : '0.4rem 0',
                 minHeight: 0,
                 overflow: 'hidden'
               }}>
@@ -1003,7 +1014,7 @@ export function DailyVerseSection({
                     {contentMode === 'english_only' && (
                       <blockquote style={{
                         fontSize: `${effectiveFontSize}px`,
-                        lineHeight: lineSpacing,
+                        lineHeight: isMobile ? Math.min(lineSpacing, 1.45) : lineSpacing,
                         fontWeight: 650,
                         fontFamily: 'serif',
                         fontStyle: 'italic',
@@ -1020,7 +1031,7 @@ export function DailyVerseSection({
                     {contentMode === 'tamil_only' && (
                       <blockquote style={{
                         fontSize: `${effectiveFontSize}px`,
-                        lineHeight: lineSpacing,
+                        lineHeight: isMobile ? Math.min(lineSpacing, 1.45) : lineSpacing,
                         fontWeight: (fontFamily?.includes('Baloo') || fontFamily?.includes('Anek') || fontFamily?.includes('Mukta')) ? 800 : 750,
                         fontFamily: fontFamily.includes(',') ? fontFamily : `'${fontFamily}', 'Noto Sans Tamil', sans-serif`,
                         color: activeTextColor,
@@ -1037,7 +1048,7 @@ export function DailyVerseSection({
                       <>
                         <blockquote style={{
                           fontSize: `${effectiveFontSize}px`,
-                          lineHeight: lineSpacing,
+                          lineHeight: isMobile ? Math.min(lineSpacing, 1.45) : lineSpacing,
                           fontWeight: (fontFamily?.includes('Baloo') || fontFamily?.includes('Anek') || fontFamily?.includes('Mukta')) ? 800 : 750,
                           fontFamily: fontFamily.includes(',') ? fontFamily : `'${fontFamily}', 'Noto Sans Tamil', sans-serif`,
                           color: activeTextColor,
@@ -1050,14 +1061,14 @@ export function DailyVerseSection({
 
                         {kjvVerseText && (
                           <p style={{
-                            fontSize: `${Math.max(13, Math.round(effectiveFontSize * 0.58))}px`,
-                            lineHeight: Math.max(1.35, parseFloat((lineSpacing * 0.88).toFixed(2))),
+                            fontSize: `${Math.max(11, Math.round(effectiveFontSize * 0.58))}px`,
+                            lineHeight: Math.max(1.25, parseFloat((lineSpacing * 0.88).toFixed(2))),
                             opacity: 0.88,
                             fontFamily: 'serif',
                             fontStyle: 'italic',
-                            marginTop: '0.8rem',
+                            marginTop: isMobile ? '0.4rem' : '0.8rem',
                             marginBottom: 0,
-                            paddingTop: '0.6rem',
+                            paddingTop: isMobile ? '0.3rem' : '0.6rem',
                             borderTop: isDarkBg ? '1px dashed rgba(255,255,255,0.2)' : '1px dashed rgba(0,0,0,0.15)',
                             letterSpacing: `${(letterSpacing * 0.6).toFixed(1)}px`
                           }}>
@@ -1075,13 +1086,13 @@ export function DailyVerseSection({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: textAlign === 'center' ? 'center' : (textAlign === 'right' ? 'flex-end' : 'flex-start'),
-                marginTop: '1rem',
-                paddingTop: '0.8rem',
+                marginTop: isMobile ? '0.35rem' : '1rem',
+                paddingTop: isMobile ? '0.35rem' : '0.8rem',
                 borderTop: isDarkBg ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.1)',
                 flexShrink: 0
               }}>
                 <div style={{
-                  fontSize: `${Math.max(14, Math.round(effectiveFontSize * 0.68))}px`,
+                  fontSize: isMobile ? '0.72rem' : `${Math.max(14, Math.round(effectiveFontSize * 0.68))}px`,
                   fontWeight: 850,
                   color: activeAccentColor,
                   letterSpacing: '0.01em',
@@ -1092,6 +1103,147 @@ export function DailyVerseSection({
               </div>
             </div>
           </div>
+
+          {/* Mobile: Compact Icon-Only Action Buttons Toolbar */}
+          {isMobile && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '6px',
+              padding: '6px 8px',
+              backgroundColor: 'var(--bg-surface)',
+              borderRadius: '10px',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--shadow-sm)',
+              width: '100%',
+              maxWidth: '360px',
+              boxSizing: 'border-box',
+              flexShrink: 0,
+              marginTop: '4px'
+            }}>
+              {/* 1. Download */}
+              <button
+                onClick={handleDownloadImage}
+                disabled={isExporting || loading}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--accent-contrast)',
+                  border: 'none',
+                  cursor: isExporting ? 'wait' : 'pointer'
+                }}
+                title={isEn ? 'Download Image' : 'படமாக பதிவிறக்கு'}
+              >
+                <Download size={16} />
+              </button>
+
+              {/* 2. Randomize */}
+              <button
+                onClick={handleRandomizeAll}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--accent-light)',
+                  color: 'var(--accent)',
+                  border: '1px solid var(--accent)',
+                  cursor: 'pointer'
+                }}
+                title={isEn ? 'Randomize' : 'பாணி மாற்று'}
+              >
+                <Sparkles size={16} />
+              </button>
+
+              {/* 3. New Verse */}
+              <button
+                onClick={handleNextRandom}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+                title={isEn ? 'New Verse' : 'புதிய வசனம்'}
+              >
+                <RotateCw size={15} style={{ color: 'var(--accent)' }} />
+              </button>
+
+              {/* 4. Save / Favorite */}
+              <button
+                onClick={toggleFavorite}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  backgroundColor: isFavorite ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                  border: `1px solid ${isFavorite ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  color: isFavorite ? 'var(--accent)' : 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+                title={isFavorite ? (isEn ? 'Saved' : 'சேமிக்கப்பட்டது') : (isEn ? 'Save' : 'சேமி')}
+              >
+                <Star size={15} fill={isFavorite ? 'currentColor' : 'none'} />
+              </button>
+
+              {/* 5. Copy Text */}
+              <button
+                onClick={copyDailyCard}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: copied ? 'var(--accent)' : 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+                title={copied ? (isEn ? 'Copied' : 'பிரதி செய்யப்பட்டது') : (isEn ? 'Copy' : 'பிரதி')}
+              >
+                {copied ? <Check size={15} /> : <Copy size={15} />}
+              </button>
+
+              {/* 6. Full Chapter */}
+              <button
+                onClick={() => onOpenInBible(currentVerseRef.bookCode, currentVerseRef.chapter, currentVerseRef.verse)}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+                title={isEn ? 'Chapter' : 'அதிகாரம்'}
+              >
+                <BookOpen size={15} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ===================================================================== */}
@@ -1100,7 +1252,7 @@ export function DailyVerseSection({
         <div style={{
           flex: 1,
           minHeight: 0,
-          height: isMobile ? 'calc(100% - 38vh - 0.5rem)' : '100%',
+          height: isMobile ? 'auto' : '100%',
           overflowY: 'auto',
           overflowX: 'hidden',
           display: 'flex',
@@ -1873,7 +2025,7 @@ export function DailyVerseSection({
                     type="text"
                     value={cardTagText}
                     onChange={(e) => setCardTagText(e.target.value)}
-                    placeholder={isEn ? 'e.g. DAILY BREAD, GOD IS LOVE' : 'எ.கா: அன்றாட மன்னாவும்'}
+                    placeholder={isEn ? 'e.g. SHARON AG CHURCH, GOD IS LOVE' : 'எ.கா: SHARON AG CHURCH'}
                     disabled={!showCardTag}
                     style={{
                       width: '100%',

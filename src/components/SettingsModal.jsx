@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Globe, Palette, Type, Settings } from 'lucide-react';
+import { X, Globe, Palette, Type, Settings, Download } from 'lucide-react';
 import { translations } from '../lib/i18n';
 
 export function SettingsModal({
@@ -10,7 +10,9 @@ export function SettingsModal({
   theme,
   setTheme,
   fontSize,
-  setFontSize
+  setFontSize,
+  onOpenInstallModal,
+  isAppInstalled
 }) {
   if (!isOpen) return null;
   const t = translations[uiLang] || translations.ta;
@@ -160,6 +162,49 @@ export function SettingsModal({
               onChange={(e) => setFontSize(Number(e.target.value))}
               style={{ width: '100%' }}
             />
+          </div>
+
+          {/* 4. App Installation & PWA */}
+          <div style={{
+            paddingTop: '0.85rem',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Download size={16} style={{ color: 'var(--accent)' }} />
+              <div>
+                <label style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>
+                  {uiLang === 'ta' ? 'செயலியை நிறுவு / ஆப்' : 'Install App / Add to Home'}
+                </label>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  {uiLang === 'ta' ? 'முகப்புத் திரையில் சேர்க்கவும்' : 'Add to home screen or desktop app'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                onOpenInstallModal?.();
+              }}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                backgroundColor: isAppInstalled ? 'rgba(5, 150, 105, 0.12)' : 'var(--accent-light)',
+                color: isAppInstalled ? '#059669' : 'var(--accent)',
+                border: `1px solid ${isAppInstalled ? '#059669' : 'var(--accent)'}`,
+                fontSize: '0.78rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+            >
+              {isAppInstalled 
+                ? (uiLang === 'ta' ? 'நிறுவப்பட்டது' : 'Installed') 
+                : (uiLang === 'ta' ? 'நிறுவு' : 'Install')}
+            </button>
           </div>
         </div>
 

@@ -39,10 +39,12 @@ function PushPin({ color = '#ef4444', isHovered = false }) {
 }
 
 // 3D Parallax Interactive Card where Pin & Card share the exact transform
-function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = false }) {
+function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = false, totalCards = 4 }) {
   const cardRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 });
+
+  const isOddLast = isMobile && isLastCard && (totalCards % 2 !== 0);
 
   const handleMouseMove = (e) => {
     if (isMobile || !cardRef.current) return;
@@ -64,8 +66,9 @@ function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = fals
     }
   };
 
+  const mobileTransform = `rotate(${card.mobileTilt || card.tilt || '0deg'}) translateY(${card.mobileOffsetY || '0px'})`;
   const combinedTransform = isMobile
-    ? 'none'
+    ? mobileTransform
     : isHovered
       ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateY(-16px) scale3d(1.06, 1.06, 1.06)`
       : `rotate(${card.tilt}) translateY(${card.offsetY})`;
@@ -81,9 +84,11 @@ function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = fals
       onMouseLeave={handleMouseLeave}
       style={{
         flex: isMobile ? undefined : 1,
-        gridColumn: isMobile && isLastCard ? 'span 2' : undefined,
+        gridColumn: isOddLast ? '1 / span 2' : undefined,
+        justifySelf: isOddLast ? 'center' : undefined,
+        width: isMobile ? (isOddLast ? 'calc(50% - 0.42rem)' : '100%') : undefined,
         minWidth: isMobile ? '0' : '175px',
-        maxWidth: isMobile ? 'none' : '225px',
+        maxWidth: isMobile ? (isOddLast ? '160px' : 'none') : '225px',
         position: 'relative',
         transform: combinedTransform,
         transition: isHovered 
@@ -97,19 +102,21 @@ function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = fals
       {/* 3D Push Pin locked to the top center of this card */}
       <PushPin color={card.pinColor} isHovered={isHovered} />
 
-      {/* Pinned Card Body */}
+      {/* Pinned Card Body: Exact Square on Mobile, Portrait Rectangle on Desktop */}
       <div
         style={{
           width: '100%',
-          minHeight: isMobile ? '78px' : '215px',
-          maxHeight: isMobile ? '90px' : '245px',
+          aspectRatio: isMobile ? '1 / 1' : undefined,
+          minHeight: isMobile ? undefined : '215px',
+          maxHeight: isMobile ? undefined : '245px',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
-          borderRadius: isMobile ? '10px' : '12px',
-          padding: isMobile ? '0.55rem 0.75rem 0.45rem 0.75rem' : '1.4rem 1.1rem 1.15rem 1.1rem',
+          borderRadius: isMobile ? '12px' : '12px',
+          padding: isMobile ? '0.75rem 0.65rem 0.65rem 0.65rem' : '1.4rem 1.1rem 1.15rem 1.1rem',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
+          alignItems: isMobile ? 'flex-start' : undefined,
           position: 'relative',
           overflow: 'hidden',
           boxShadow: isHovered
@@ -137,95 +144,66 @@ function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = fals
         {/* BIG WATERMARK-STYLE MINIMAL THICK ICON WITH FADED BOTTOM */}
         <div style={{
           position: 'absolute',
-          right: '-10px',
-          bottom: '-12px',
-          width: '105px',
-          height: '105px',
+          right: isMobile ? '-12px' : '-10px',
+          bottom: isMobile ? '-12px' : '-12px',
+          width: isMobile ? '78px' : '105px',
+          height: isMobile ? '78px' : '105px',
           color: card.numColor,
           pointerEvents: 'none',
           zIndex: 1,
-          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.12) 45%, rgba(0,0,0,0) 90%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.12) 45%, rgba(0,0,0,0) 90%)',
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.10) 45%, rgba(0,0,0,0) 90%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.10) 45%, rgba(0,0,0,0) 90%)',
           transition: 'transform 0.3s ease, opacity 0.3s ease',
           transform: isHovered ? 'scale(1.15) rotate(-6deg)' : 'scale(1) rotate(0deg)'
         }}>
           {card.watermarkIcon}
         </div>
 
-        {/* REPLACED BOX THING: SLEEK SUITABLE ICON IN TOP-LEFT */}
-        {isMobile ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', zIndex: 4 }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '22px',
-              height: '22px',
-              borderRadius: '6px',
-              backgroundColor: card.accentBg,
-              color: card.numColor,
-              border: '1px solid var(--border-subtle)',
-              flexShrink: 0
-            }}>
-              <CardIcon size={12} strokeWidth={2.4} />
-            </div>
-            <h2 style={{
-              fontFamily: 'var(--font-okine)',
-              fontSize: '0.90rem',
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.1,
-              margin: 0,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {card.title}
-            </h2>
-          </div>
-        ) : (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '30px',
-            height: '30px',
-            borderRadius: '8px',
-            backgroundColor: card.accentBg,
-            color: card.numColor,
-            marginBottom: '0.75rem',
-            zIndex: 4,
-            border: '1px solid var(--border-subtle)'
-          }}>
-            <CardIcon size={16} strokeWidth={2.4} />
-          </div>
-        )}
+        {/* SLEEK SUITABLE ICON IN TOP-LEFT */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: isMobile ? '26px' : '30px',
+          height: isMobile ? '26px' : '30px',
+          borderRadius: '7px',
+          backgroundColor: card.accentBg,
+          color: card.numColor,
+          marginBottom: isMobile ? '0.2rem' : '0.75rem',
+          zIndex: 4,
+          border: '1px solid var(--border-subtle)',
+          flexShrink: 0
+        }}>
+          <CardIcon size={isMobile ? 14 : 16} strokeWidth={2.4} />
+        </div>
 
         {/* Main Text as Center Attraction */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 4, marginTop: isMobile ? '2px' : undefined }}>
-          {!isMobile && (
-            <h2 style={{
-              fontFamily: 'var(--font-okine)',
-              fontSize: 'clamp(1.35rem, 1.8vw, 1.65rem)',
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.15,
-              marginBottom: '0.45rem'
-            }}>
-              {card.title}
-            </h2>
-          )}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 4, width: '100%' }}>
+          <h2 style={{
+            fontFamily: 'var(--font-okine)',
+            fontSize: isMobile ? '0.96rem' : 'clamp(1.35rem, 1.8vw, 1.65rem)',
+            fontWeight: 800,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.15,
+            marginBottom: isMobile ? '0.18rem' : '0.45rem',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {card.title}
+          </h2>
 
-          {/* Very Short Description */}
+          {/* Short Description */}
           <p style={{
-            fontSize: isMobile ? '0.68rem' : '0.78rem',
+            fontSize: isMobile ? '0.67rem' : '0.78rem',
             color: 'var(--text-secondary)',
             lineHeight: 1.25,
             margin: 0,
             fontWeight: 500,
-            whiteSpace: isMobile ? 'nowrap' : undefined,
+            display: isMobile ? '-webkit-box' : undefined,
+            WebkitLineClamp: isMobile ? 2 : undefined,
+            WebkitBoxOrient: isMobile ? 'vertical' : undefined,
             overflow: isMobile ? 'hidden' : undefined,
             textOverflow: isMobile ? 'ellipsis' : undefined
           }}>
@@ -235,12 +213,12 @@ function InteractiveCard({ card, onNavigate, isMobile = false, isLastCard = fals
 
         {/* Bottom Accent Line */}
         <div style={{
-          height: isMobile ? '2px' : '3px',
-          width: isMobile ? '20px' : '28px',
+          height: isMobile ? '2.5px' : '3px',
+          width: isMobile ? '22px' : '28px',
           backgroundColor: card.pinColor,
           borderRadius: '2px',
-          opacity: 0.7,
-          marginTop: isMobile ? '2px' : '0.75rem',
+          opacity: 0.75,
+          marginTop: isMobile ? '0.2rem' : '0.75rem',
           zIndex: 4
         }} />
       </div>
@@ -285,6 +263,8 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       numColor: '#ea580c',
       tilt: '-1.4deg',
       offsetY: '-14px',
+      mobileTilt: '-2.2deg',
+      mobileOffsetY: '-3px',
       watermarkIcon: (
         <svg width="105" height="105" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
@@ -304,6 +284,8 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       numColor: '#2563eb',
       tilt: '1.2deg',
       offsetY: '18px',
+      mobileTilt: '2.4deg',
+      mobileOffsetY: '4px',
       watermarkIcon: (
         <svg width="105" height="105" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 18V5l12-2v13" />
@@ -322,6 +304,8 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       numColor: '#7c3aed',
       tilt: '-0.8deg',
       offsetY: '-10px',
+      mobileTilt: '1.6deg',
+      mobileOffsetY: '-4px',
       watermarkIcon: (
         <svg width="105" height="105" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <rect width="20" height="14" x="2" y="3" rx="2" />
@@ -341,6 +325,8 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       numColor: '#d97706',
       tilt: '1.4deg',
       offsetY: '20px',
+      mobileTilt: '-2.5deg',
+      mobileOffsetY: '4px',
       watermarkIcon: (
         <svg width="105" height="105" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="4" />
@@ -365,6 +351,8 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       numColor: '#059669',
       tilt: '-1.2deg',
       offsetY: '-6px',
+      mobileTilt: '1.0deg',
+      mobileOffsetY: '-2px',
       watermarkIcon: (
         <svg width="105" height="105" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
@@ -387,7 +375,7 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: isMobile ? '0.75rem 0.75rem 1.5rem 0.75rem' : '0 2rem',
+        padding: isMobile ? '0.75rem 0.75rem 4.5rem 0.75rem' : '0 2rem',
         boxSizing: 'border-box',
         position: 'relative'
       }}
@@ -598,25 +586,27 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
           </svg>
         )}
 
-        {/* CARDS ROW (DESKTOP: ROW OF 5; MOBILE: 2 COLS X 3 ROWS VERTICAL GRID FIT IN 100%) */}
+        {/* CARDS ROW (DESKTOP: ROW OF 5; MOBILE: 2 COLS X 3 ROWS OFFSET SQUARES FIT IN 100%) */}
         <div style={{
           display: isMobile ? 'grid' : 'flex',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : undefined,
+          gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : undefined,
           flexDirection: isMobile ? undefined : 'row',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: isMobile ? '0.55rem' : '1.25rem',
+          gap: isMobile ? '0.85rem' : '1.25rem',
           width: '100%',
+          maxWidth: isMobile ? '330px' : '1240px',
           zIndex: 10,
-          padding: isMobile ? '0.25rem 0' : '1.5rem 0'
+          padding: isMobile ? '0.35rem 0' : '1.5rem 0'
         }}>
-          {cards.map((card, idx) => (
+          {(isMobile ? cards.filter((c) => c.id !== 'projector') : cards).map((card, idx, arr) => (
             <InteractiveCard
               key={card.id}
               card={card}
               onNavigate={onNavigate}
               isMobile={isMobile}
-              isLastCard={idx === cards.length - 1}
+              isLastCard={idx === arr.length - 1}
+              totalCards={arr.length}
             />
           ))}
         </div>

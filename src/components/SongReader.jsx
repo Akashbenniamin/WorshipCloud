@@ -4,6 +4,7 @@ import {
   Search, 
   ChevronRight, 
   ChevronLeft,
+  ChevronDown,
   Copy, 
   Check, 
   Star, 
@@ -11,7 +12,10 @@ import {
   Presentation, 
   Trash2, 
   Plus, 
-  X 
+  X,
+  MoreVertical,
+  Sliders,
+  LayoutGrid
 } from 'lucide-react';
 import { normalizeSongSearch, splitSongSections, rankSongResults } from '../lib/songParser';
 import { exportSongToPdf, exportSongToPptx } from '../lib/exportTools';
@@ -22,19 +26,22 @@ const chunkCache = new Map();
 export function SongReader({
   songsIndex,
   fontSize,
+  setFontSize,
   selectedSongInit,
   uiLang = 'ta',
   userSongs = [],
   onOpenAddSong,
   onDeleteSong,
   user,
-  onOpenAuth
+  onOpenAuth,
+  theme,
+  setTheme
 }) {
   const t = translations[uiLang] || translations.ta;
 
   // Responsive mobile view state
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
-  const [mobileTab, setMobileTab] = useState('lyrics'); // 'lyrics' | 'list'
+  const [mobileTab, setMobileTab] = useState(() => (typeof window !== 'undefined' && window.innerWidth <= 768) ? 'list' : 'lyrics');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -49,6 +56,48 @@ export function SongReader({
   const [copiedId, setCopiedId] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('all'); // 'all' | 'favorites'
 
+  // Mobile Song Sheet & Customization States
+  const [isMobileSongSheetOpen, setIsMobileSongSheetOpen] = useState(false);
+  const [isSongCustomizationOpen, setIsSongCustomizationOpen] = useState(false);
+  const [fullscreenSlideStanza, setFullscreenSlideStanza] = useState(null); // { stanzaIndex: number }
+  const [isStanzaNavModalOpen, setIsStanzaNavModalOpen] = useState(false);
+
+  // Swipe gesture detection for fullscreen stanza slide
+  const songTouchStartY = useRef(null);
+  const songTouchStartX = useRef(null);
+
+  const handleSongSlideTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+      songTouchStartY.current = e.touches[0].clientY;
+      songTouchStartX.current = e.touches[0].clientX;
+    }
+  };
+
+  const handleSongSlideTouchEnd = (e) => {
+    if (songTouchStartY.current === null || songTouchStartX.current === null) return;
+    const deltaY = e.changedTouches[0].clientY - songTouchStartY.current;
+    const deltaX = e.changedTouches[0].clientX - songTouchStartX.current;
+    songTouchStartY.current = null;
+    songTouchStartX.current = null;
+
+    // Swiping up or down jumps to the first slide / stanza
+    if (Math.abs(deltaY) > 40 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      setFullscreenSlideStanza((prev) => (prev ? { ...prev, stanzaIndex: 0 } : null));
+    }
+  };
+
+  // Hardware back button to exit fullscreen slide mode
+  useEffect(() => {
+    const handlePopState = () => {
+      if (fullscreenSlideStanza) {
+        setFullscreenSlideStanza(null);
+        setIsStanzaNavModalOpen(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [fullscreenSlideStanza]);
+
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -59,14 +108,15 @@ export function SongReader({
     }
   });
 
-  // Select first song or initial song
+  // Select first song or initial song (on mobile, stays on list unless selectedSongInit provided)
   useEffect(() => {
     if (selectedSongInit) {
       setSelectedSong(selectedSongInit);
-    } else if (!selectedSong && songsIndex && songsIndex.length > 0) {
+      if (isMobile) setMobileTab('lyrics');
+    } else if (!isMobile && !selectedSong && songsIndex && songsIndex.length > 0) {
       setSelectedSong(songsIndex[0]);
     }
-  }, [selectedSongInit, songsIndex, selectedSong]);
+  }, [selectedSongInit, songsIndex, selectedSong, isMobile]);
 
   // Load selected song lyrics
   useEffect(() => {
@@ -178,6 +228,33 @@ export function SongReader({
     return cleaned.join('\n').trim();
   }, [songDetails]);
 
+  const songStanzas = useMemo(() => {
+    if (songDetails?.sections && songDetails.sections.length > 0) {
+      const parsed = songDetails.sections
+        .map((s) => (typeof s === 'string' ? s : s.content || s.text || ''))
+        .filter((s) => s.trim().length > 0);
+      if (parsed.length > 0) return parsed;
+    }
+    if (!cleanLyrics) return [];
+    return cleanLyrics.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  }, [songDetails, cleanLyrics]);
+
+  const handleNextStanza = () => {
+    if (!fullscreenSlideStanza) return;
+    const cur = fullscreenSlideStanza.stanzaIndex;
+    if (cur < songStanzas.length - 1) {
+      setFullscreenSlideStanza({ stanzaIndex: cur + 1 });
+    }
+  };
+
+  const handlePrevStanza = () => {
+    if (!fullscreenSlideStanza) return;
+    const cur = fullscreenSlideStanza.stanzaIndex;
+    if (cur > 0) {
+      setFullscreenSlideStanza({ stanzaIndex: cur - 1 });
+    }
+  };
+
   const copySongLyrics = () => {
     if (!selectedSong || !cleanLyrics) return;
     navigator.clipboard.writeText(`${selectedSong.t}\n\n${cleanLyrics}`);
@@ -201,7 +278,7 @@ export function SongReader({
       flexDirection: isMobile ? 'column' : undefined,
       gridTemplateColumns: isMobile ? undefined : '1fr 390px',
       gap: isMobile ? 0 : '1.25rem',
-      padding: isMobile ? '0 0.5rem 0.5rem 0.5rem' : '0 1.5rem 0.5rem 1.5rem',
+      padding: isMobile ? '8px 0.5rem 0.5rem 0.5rem' : '0 1.5rem 0.5rem 1.5rem',
       width: '100%',
       height: '100%',
       maxHeight: '100%',
@@ -242,131 +319,184 @@ export function SongReader({
                 flexWrap: 'wrap',
                 flexShrink: 0
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                  {/* Tappable Title Card: Hybrid Dropdown Opener on Mobile */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isMobile) setIsMobileSongSheetOpen(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      cursor: isMobile ? 'pointer' : 'default',
+                      textAlign: 'left',
+                      minWidth: 0,
+                      flex: 1
+                    }}
+                    title={isMobile ? (uiLang === 'ta' ? 'பாடலை மாற்ற கிளிக் செய்க' : 'Click to switch song') : undefined}
+                  >
+                    <Music size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                    <h1 style={{
+                      fontSize: isMobile ? '1.18rem' : '1.45rem',
+                      fontWeight: 800,
+                      color: 'var(--text-primary)',
+                      lineHeight: 1.25,
+                      margin: 0,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {selectedSong.t}
+                    </h1>
+                    {isMobile && <ChevronDown size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
+                  </button>
+                </div>
+
+              {/* Action Buttons: Desktop: PDF -> PPTX -> Copy -> Star; Mobile: Star + 3-Dot */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                {!isMobile ? (
+                  <>
+                    {/* 1. PDF */}
                     <button
-                      onClick={() => setMobileTab('list')}
+                      onClick={handleDownloadPdf}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        padding: '6px 10px',
+                        gap: '5px',
+                        padding: '7px 12px',
                         borderRadius: '8px',
                         backgroundColor: 'var(--bg-canvas)',
                         border: '1px solid var(--border-subtle)',
                         color: 'var(--text-primary)',
-                        fontSize: '0.78rem',
-                        fontWeight: 750,
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
                         cursor: 'pointer',
-                        flexShrink: 0
+                        transition: 'all 0.15s ease'
                       }}
-                      title="Back to song list"
+                      title="Download PDF song sheet"
                     >
-                      <ChevronLeft size={16} />
-                      <span>{uiLang === 'ta' ? 'பட்டியல்' : 'List'}</span>
+                      <FileDown size={15} style={{ color: 'var(--accent)' }} />
+                      <span>PDF</span>
                     </button>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Music size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                    <h1 style={{ fontSize: isMobile ? '1.15rem' : '1.45rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25, margin: 0 }}>
-                      {selectedSong.t}
-                    </h1>
-                  </div>
-                </div>
 
-              {/* Action Buttons: Order: PDF -> PPTX -> Copy (icon only) -> Star/Fav (icon only) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                {/* 1. PDF */}
-                <button
-                  onClick={handleDownloadPdf}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '7px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-canvas)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    fontWeight: 700,
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title="Download PDF song sheet"
-                >
-                  <FileDown size={15} style={{ color: 'var(--accent)' }} />
-                  <span>PDF</span>
-                </button>
+                    {/* 2. PPTX */}
+                    <button
+                      onClick={handleDownloadPptx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '7px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-canvas)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-primary)',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Download PowerPoint presentation"
+                    >
+                      <Presentation size={15} style={{ color: '#059669' }} />
+                      <span>PPTX</span>
+                    </button>
 
-                {/* 2. PPTX */}
-                <button
-                  onClick={handleDownloadPptx}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '7px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-canvas)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    fontWeight: 700,
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title="Download PowerPoint presentation"
-                >
-                  <Presentation size={15} style={{ color: '#059669' }} />
-                  <span>PPTX</span>
-                </button>
+                    {/* 3. Copy (Icon Only) */}
+                    <button
+                      onClick={copySongLyrics}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-canvas)',
+                        border: '1px solid var(--border-subtle)',
+                        color: copiedId === 'full' ? 'var(--accent)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title={copiedId === 'full' ? t.copied : t.copy}
+                    >
+                      {copiedId === 'full' ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
 
-                {/* 3. Copy (Icon Only) */}
-                <button
-                  onClick={copySongLyrics}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-canvas)',
-                    border: '1px solid var(--border-subtle)',
-                    color: copiedId === 'full' ? 'var(--accent)' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={copiedId === 'full' ? t.copied : t.copy}
-                >
-                  {copiedId === 'full' ? <Check size={16} /> : <Copy size={16} />}
-                </button>
+                    {/* 4. Star / Favorite (Icon Only) */}
+                    <button
+                      onClick={() => toggleFavorite(selectedSong)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '8px',
+                        backgroundColor: isFav ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                        border: `1px solid ${isFav ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                        color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Star size={16} fill={isFav ? 'currentColor' : 'none'} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Mobile: Star / Favorite */}
+                    <button
+                      onClick={() => toggleFavorite(selectedSong)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '8px',
+                        backgroundColor: isFav ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                        border: `1px solid ${isFav ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                        color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
+                        cursor: 'pointer'
+                      }}
+                      title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Star size={17} fill={isFav ? 'currentColor' : 'none'} />
+                    </button>
 
-                {/* 4. Star / Favorite (Icon Only) */}
-                <button
-                  onClick={() => toggleFavorite(selectedSong)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '8px',
-                    backgroundColor: isFav ? 'var(--accent-light)' : 'var(--bg-canvas)',
-                    border: `1px solid ${isFav ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                    color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-                >
-                  <Star size={16} fill={isFav ? 'currentColor' : 'none'} />
-                </button>
+                    {/* Mobile: 3-Dot Customization & Download Menu */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSongCustomizationOpen(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-canvas)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer'
+                      }}
+                      title={uiLang === 'ta' ? 'அமைப்புகள் & பதிவிறக்கம்' : 'Options & Downloads'}
+                    >
+                      <MoreVertical size={17} />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Lyrics Reading Area: INDEPENDENTLY SCROLLABLE, CLEAN FLOW, NO BOXES, NO TITLES */}
+            {/* Lyrics Reading Area: INDEPENDENTLY SCROLLABLE, CLEAN FLOW */}
             {loadingSong ? (
               <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
                 பாடல் வரிகள் ஏற்றப்படுகின்றன...
@@ -376,23 +506,69 @@ export function SongReader({
                 flex: 1,
                 minHeight: 0,
                 overflowY: 'auto',
-                padding: '1.75rem 2.25rem',
+                padding: isMobile ? '0.85rem 0.65rem 76px 0.65rem' : '1.75rem 2.25rem',
                 backgroundColor: 'var(--bg-surface)',
                 borderRadius: '10px',
                 border: '1px solid var(--border-subtle)',
                 boxShadow: 'var(--shadow-sm)'
               }}>
-                <div style={{
-                  fontSize: `${fontSize}px`,
-                  lineHeight: 2.1,
-                  color: 'var(--text-primary)',
-                  whiteSpace: 'pre-line',
-                  fontFamily: 'var(--font-tamil)',
-                  fontWeight: 450,
-                  maxWidth: '820px'
-                }}>
-                  {cleanLyrics}
-                </div>
+                {isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {songStanzas.map((stanza, sIdx) => (
+                      <div
+                        key={sIdx}
+                        onClick={() => {
+                          setFullscreenSlideStanza({ stanzaIndex: sIdx });
+                          window.history.pushState({ modal: 'fullscreen_song_stanza' }, '');
+                          try {
+                            if (screen.orientation && screen.orientation.lock) {
+                              screen.orientation.lock('landscape').catch(() => {});
+                            }
+                          } catch (e) {}
+                        }}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '8px',
+                          backgroundColor: 'var(--bg-canvas)',
+                          border: '1px solid var(--border-subtle)',
+                          cursor: 'pointer',
+                          transition: 'all 0.12s ease'
+                        }}
+                      >
+                        <div style={{
+                          fontSize: '0.70rem',
+                          fontWeight: 800,
+                          color: 'var(--accent)',
+                          marginBottom: '4px'
+                        }}>
+                          {uiLang === 'ta' ? `பத்தி ${sIdx + 1}` : `Stanza ${sIdx + 1}`}
+                        </div>
+                        <div style={{
+                          fontSize: `${fontSize}px`,
+                          lineHeight: 1.85,
+                          color: 'var(--text-primary)',
+                          whiteSpace: 'pre-line',
+                          fontFamily: 'var(--font-tamil)',
+                          fontWeight: 450
+                        }}>
+                          {stanza}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    fontSize: `${fontSize}px`,
+                    lineHeight: 2.1,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'pre-line',
+                    fontFamily: 'var(--font-tamil)',
+                    fontWeight: 450,
+                    maxWidth: '820px'
+                  }}>
+                    {cleanLyrics}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -419,39 +595,6 @@ export function SongReader({
           boxShadow: 'var(--shadow-sm)',
           boxSizing: 'border-box'
         }}>
-          {/* Quick bar on mobile to jump back to lyrics if a song is already loaded */}
-          {isMobile && selectedSong && (
-            <div style={{
-              padding: '0.5rem 0.75rem',
-              backgroundColor: 'var(--accent-light)',
-              borderBottom: '1px solid var(--accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px'
-            }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 750, color: 'var(--accent)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                📖 {selectedSong.t}
-              </div>
-              <button
-                onClick={() => setMobileTab('lyrics')}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--accent)',
-                  color: 'var(--accent-contrast)',
-                  border: 'none',
-                  fontSize: '0.74rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                {uiLang === 'ta' ? 'வரிகள் →' : 'Lyrics →'}
-              </button>
-            </div>
-          )}
-
           {/* Sidebar Tabs */}
           <div style={{
             display: 'flex',
@@ -522,37 +665,8 @@ export function SongReader({
           </button>
         </div>
 
-        {/* Action Button & Search Bar */}
-        <div style={{ padding: '0.65rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              if (!user && onOpenAuth) {
-                onOpenAuth();
-              } else if (onOpenAddSong) {
-                onOpenAddSong();
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--accent)',
-              color: '#ffffff',
-              border: 'none',
-              fontSize: '0.82rem',
-              fontWeight: 750,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-            }}
-          >
-            <Plus size={15} />
-            <span>{t.addSong}</span>
-          </button>
+        {/* Search Bar with Embedded Add Song Button (No entire row wasted) */}
+        <div style={{ padding: '0.65rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -560,8 +674,8 @@ export function SongReader({
             backgroundColor: 'var(--bg-canvas)',
             border: '1px solid var(--border-subtle)',
             borderRadius: '8px',
-            padding: '0 12px',
-            minHeight: '44px',
+            padding: '0 8px 0 12px',
+            minHeight: '42px',
             boxShadow: 'var(--shadow-sm)',
             transition: 'all 0.15s ease'
           }}>
@@ -601,6 +715,37 @@ export function SongReader({
                 <X size={15} />
               </button>
             )}
+
+            {/* Embedded Add Song button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!user && onOpenAuth) {
+                  onOpenAuth();
+                } else if (onOpenAddSong) {
+                  onOpenAddSong();
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                backgroundColor: 'var(--accent)',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '0.76rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+              title={t.addSong}
+            >
+              <Plus size={15} />
+              {!isMobile && <span>{t.addSong}</span>}
+            </button>
           </div>
         </div>
 
@@ -732,34 +877,727 @@ export function SongReader({
       </aside>
       )}
 
-      {/* Floating mobile button to switch to search songs */}
-      {isMobile && mobileTab === 'lyrics' && (
+      {/* 1. Mobile Song Picker / Hybrid Dropdown Modal (Opens when tapping song title) */}
+      {isMobile && isMobileSongSheetOpen && (
         <div style={{
           position: 'fixed',
-          bottom: '18px',
-          right: '18px',
-          zIndex: 60
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          backgroundColor: 'var(--bg-canvas)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}>
-          <button
-            onClick={() => setMobileTab('list')}
-            style={{
+          {/* Modal Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 14px',
+            borderBottom: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--bg-surface)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Music size={18} style={{ color: 'var(--accent)' }} />
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {uiLang === 'ta' ? 'பாடலைத் தேர்ந்தெடுக்கவும்' : 'Select Song'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileSongSheetOpen(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Modal Search Bar with Embedded Add Button */}
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface)' }}>
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '10px 16px',
-              borderRadius: '24px',
-              backgroundColor: 'var(--accent)',
-              color: 'var(--accent-contrast)',
-              fontWeight: 800,
-              fontSize: '0.84rem',
-              border: 'none',
-              boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
-              cursor: 'pointer'
+              gap: '8px',
+              backgroundColor: 'var(--bg-canvas)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              padding: '0 8px 0 12px',
+              minHeight: '42px',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <Search size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder={t.searchSongs}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: '0.88rem',
+                  color: 'var(--text-primary)',
+                  width: '100%',
+                  fontWeight: 650
+                }}
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'var(--text-tertiary)'
+                  }}
+                >
+                  <X size={15} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileSongSheetOpen(false);
+                  if (!user && onOpenAuth) {
+                    onOpenAuth();
+                  } else if (onOpenAddSong) {
+                    onOpenAddSong();
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--accent)',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.76rem',
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+                title={t.addSong}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setSidebarTab('all')}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  fontSize: '0.76rem',
+                  fontWeight: 750,
+                  backgroundColor: sidebarTab === 'all' ? 'var(--accent)' : 'var(--bg-canvas)',
+                  color: sidebarTab === 'all' ? '#ffffff' : 'var(--text-secondary)',
+                  border: `1px solid ${sidebarTab === 'all' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  cursor: 'pointer'
+                }}
+              >
+                {t.songs}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSidebarTab('favorites')}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  fontSize: '0.76rem',
+                  fontWeight: 750,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  backgroundColor: sidebarTab === 'favorites' ? 'var(--accent)' : 'var(--bg-canvas)',
+                  color: sidebarTab === 'favorites' ? '#ffffff' : 'var(--text-secondary)',
+                  border: `1px solid ${sidebarTab === 'favorites' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  cursor: 'pointer'
+                }}
+              >
+                <Star size={13} fill={sidebarTab === 'favorites' ? 'currentColor' : 'none'} />
+                <span>{t.favorites} ({favorites.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSidebarTab('my')}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  fontSize: '0.76rem',
+                  fontWeight: 750,
+                  backgroundColor: sidebarTab === 'my' ? 'var(--accent)' : 'var(--bg-canvas)',
+                  color: sidebarTab === 'my' ? '#ffffff' : 'var(--text-secondary)',
+                  border: `1px solid ${sidebarTab === 'my' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  cursor: 'pointer'
+                }}
+              >
+                {t.mySongs} ({userSongs.length})
+              </button>
+            </div>
+          </div>
+
+          {/* Songs List inside Modal */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
+            {filteredSongs.length === 0 ? (
+              <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.84rem' }}>
+                {sidebarTab === 'favorites' ? 'இன்னும் விருப்பமான பாடல்கள் சேர்க்கப்படவில்லை.' : t.noSongsFound}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {filteredSongs.map((s) => {
+                  const isSelected = selectedSong?.id === s.id;
+                  const isItemFav = favorites.some((f) => f.id === s.id);
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => {
+                        setSelectedSong(s);
+                        setMobileTab('lyrics');
+                        setIsMobileSongSheetOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: isSelected ? 'var(--accent-light)' : 'var(--bg-surface)',
+                        border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
+                        cursor: 'pointer',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          fontWeight: isSelected ? 800 : 650,
+                          fontSize: '0.88rem',
+                          color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {s.t || s.title}
+                        </div>
+                        {(s.ro || s.englishTitle) && (
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {s.ro || s.englishTitle}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Favorite Toggle inside dropdown/modal */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(s);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: isItemFav ? 'var(--accent)' : 'var(--text-tertiary)'
+                        }}
+                        title={isItemFav ? 'Remove favorite' : 'Add favorite'}
+                      >
+                        <Star size={17} fill={isItemFav ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Song 3-Dot Customization & Actions Bottom Sheet */}
+      {isMobile && isSongCustomizationOpen && (
+        <div
+          onClick={() => setIsSongCustomizationOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              backgroundColor: 'var(--bg-surface)',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              padding: '1.25rem 1.25rem 2rem 1.25rem',
+              boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
+              maxHeight: '85vh',
+              overflowY: 'auto'
             }}
           >
-            <Search size={15} />
-            <span>{uiLang === 'ta' ? 'பாடல்கள் தேடல்' : 'Search Songs'}</span>
+            {/* Sheet Handle & Title */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sliders size={18} style={{ color: 'var(--accent)' }} />
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {uiLang === 'ta' ? 'அமைப்புகள் & பதிவிறக்கம்' : 'Options & Downloads'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSongCustomizationOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Quick Actions (PDF, PPTX, Copy Lyrics) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                {uiLang === 'ta' ? 'செயல்கள் & பதிவிறக்கம்' : 'Actions & Downloads'}
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDownloadPdf();
+                    setIsSongCustomizationOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-canvas)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 750,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <FileDown size={16} style={{ color: 'var(--accent)' }} />
+                  <span>PDF பதிவிறக்கம்</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDownloadPptx();
+                    setIsSongCustomizationOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-canvas)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 750,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Presentation size={16} style={{ color: '#059669' }} />
+                  <span>PPTX ஸ்லைடு</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={copySongLyrics}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  backgroundColor: copiedId === 'full' ? 'var(--accent-light)' : 'var(--bg-canvas)',
+                  border: `1px solid ${copiedId === 'full' ? 'var(--accent)' : 'var(--border-subtle)'}`,
+                  color: copiedId === 'full' ? 'var(--accent)' : 'var(--text-primary)',
+                  fontWeight: 750,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {copiedId === 'full' ? <Check size={16} /> : <Copy size={16} />}
+                <span>{copiedId === 'full' ? (uiLang === 'ta' ? 'வரிகள் நகலெடுக்கப்பட்டது!' : 'Copied!') : (uiLang === 'ta' ? 'பாடல் வரிகளை நகலெடு' : 'Copy Lyrics')}</span>
+              </button>
+            </div>
+
+            {/* Font Size Adjuster */}
+            {setFontSize && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                    {uiLang === 'ta' ? 'எழுத்து அளவு' : 'Font Size'}
+                  </span>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 800 }}>
+                    {fontSize}px
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setFontSize((s) => Math.max(14, s - 1))}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--bg-canvas)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    A-
+                  </button>
+                  <input
+                    type="range"
+                    min="14"
+                    max="34"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
+                    style={{ flex: 1, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFontSize((s) => Math.min(34, s + 1))}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--bg-canvas)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    A+
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Theme Switcher */}
+            {setTheme && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                  {uiLang === 'ta' ? 'வண்ணத் தோற்றம்' : 'Color Theme'}
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[
+                    { id: 'parchment', name: 'Parchment', bg: '#fbf7ee', border: '#e6dfd1' },
+                    { id: 'ivory', name: 'Ivory Light', bg: '#fafafa', border: '#e5e7eb' },
+                    { id: 'night', name: 'Night Dark', bg: '#0d1117', border: '#30363d' }
+                  ].map((tItem) => (
+                    <button
+                      key={tItem.id}
+                      type="button"
+                      onClick={() => {
+                        setTheme(tItem.id);
+                        try { localStorage.setItem('ortho_theme', tItem.id); } catch {}
+                      }}
+                      style={{
+                        padding: '8px',
+                        borderRadius: '10px',
+                        border: theme === tItem.id ? '2px solid var(--accent)' : `1px solid ${tItem.border}`,
+                        backgroundColor: tItem.bg,
+                        color: tItem.id === 'night' ? '#ffffff' : '#111827',
+                        fontSize: '0.78rem',
+                        fontWeight: 750,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        boxShadow: theme === tItem.id ? '0 0 0 2px var(--accent-light)' : 'none'
+                      }}
+                    >
+                      {tItem.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. Mobile Fullscreen Landscape Stanza Slide Mode */}
+      {fullscreenSlideStanza && (
+        <div
+          className="song-landscape-wrapper"
+          onTouchStart={handleSongSlideTouchStart}
+          onTouchEnd={handleSongSlideTouchEnd}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: '#000000',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2.5rem 3rem',
+            boxSizing: 'border-box',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            touchAction: 'pan-y',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Orientation handling stylesheet to guarantee Landscape-only presentation */}
+          <style>{`
+            @media (max-width: 768px) and (orientation: portrait) {
+              .song-landscape-wrapper {
+                width: 100vh !important;
+                height: 100vw !important;
+                transform: rotate(90deg) translate(0, -100vw) !important;
+                transform-origin: top left !important;
+              }
+            }
+            @media (max-width: 768px) and (orientation: landscape) {
+              .song-landscape-wrapper {
+                width: 100vw !important;
+                height: 100vh !important;
+                transform: none !important;
+              }
+            }
+          `}</style>
+
+          {/* Left Half Click Zone -> Prev Stanza */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrevStanza();
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: '45%',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+          />
+
+          {/* Right Half Click Zone -> Next Stanza */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextStanza();
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: '45%',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+          />
+
+          {/* Top Right 50% Opacity Slide Switcher Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsStanzaNavModalOpen(true);
+            }}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              zIndex: 30,
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '50%',
+              width: '44px',
+              height: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              opacity: 0.5,
+              cursor: 'pointer',
+              transition: 'opacity 0.2s ease',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)'
+            }}
+            title="Slide Switcher"
+          >
+            <LayoutGrid size={20} />
           </button>
+
+          {/* Slide Content: NO badges, NO extra text or buttons, clean landscape presentation */}
+          <div style={{
+            zIndex: 5,
+            maxWidth: '92%',
+            maxHeight: '90%',
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              fontSize: 'clamp(1.4rem, 4.2vw, 2.5rem)',
+              lineHeight: 1.8,
+              color: '#ffffff',
+              fontFamily: 'var(--font-tamil)',
+              fontWeight: 550,
+              whiteSpace: 'pre-line',
+              textShadow: '0 2px 8px rgba(0,0,0,0.8)'
+            }}>
+              {songStanzas[fullscreenSlideStanza.stanzaIndex] || ''}
+            </div>
+          </div>
+
+          {/* 4. Fullscreen Slide Switcher Modal (Inside wrapper to keep landscape orientation) */}
+          {isStanzaNavModalOpen && (
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 100,
+                backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '1.5rem',
+                boxSizing: 'border-box'
+              }}
+              onClick={() => setIsStanzaNavModalOpen(false)}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  width: '100%',
+                  maxWidth: '480px',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  maxHeight: '80vh'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    {uiLang === 'ta' ? 'பத்திகள் / ஸ்லைடுகள்' : 'Stanzas / Slides'} ({songStanzas.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsStanzaNavModalOpen(false)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      padding: '4px'
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(5, 1fr)',
+                  gap: '10px',
+                  overflowY: 'auto',
+                  padding: '4px'
+                }}>
+                  {songStanzas.map((_, idx) => {
+                    const isCurrent = fullscreenSlideStanza?.stanzaIndex === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setFullscreenSlideStanza({ stanzaIndex: idx });
+                          setIsStanzaNavModalOpen(false);
+                        }}
+                        style={{
+                          aspectRatio: '1',
+                          borderRadius: '10px',
+                          backgroundColor: isCurrent ? 'var(--accent)' : 'var(--bg-canvas)',
+                          color: isCurrent ? 'var(--accent-contrast)' : 'var(--text-primary)',
+                          border: isCurrent ? '2px solid var(--accent)' : '1px solid var(--border-subtle)',
+                          fontWeight: 800,
+                          fontSize: '1rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.12s ease'
+                        }}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

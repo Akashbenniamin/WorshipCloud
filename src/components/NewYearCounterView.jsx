@@ -22,7 +22,8 @@ export function NewYearCounterView({
   uiLang = 'ta'
 }) {
   const isEn = uiLang === 'en';
-  const finalTarget = targetDate ? new Date(targetDate) : getNearestNewYear();
+  const rawTarget = targetDate ? new Date(targetDate) : getNearestNewYear();
+  const finalTarget = (rawTarget instanceof Date && !isNaN(rawTarget.getTime())) ? rawTarget : getNearestNewYear();
   const targetYear = finalTarget.getFullYear();
 
   const [now, setNow] = useState(() => Date.now());
@@ -38,10 +39,10 @@ export function NewYearCounterView({
   const isTimeUp = totalDiff <= 0;
   const isCelebrationActive = celebrate || isTimeUp;
 
-  const days = Math.floor(totalDiff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((totalDiff / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((totalDiff / (1000 * 60)) % 60);
-  const seconds = Math.floor((totalDiff / 1000) % 60);
+  const days = Math.max(0, Math.floor(totalDiff / (1000 * 60 * 60 * 24))) || 0;
+  const hours = Math.max(0, Math.floor((totalDiff / (1000 * 60 * 60)) % 24)) || 0;
+  const minutes = Math.max(0, Math.floor((totalDiff / (1000 * 60)) % 60)) || 0;
+  const seconds = Math.max(0, Math.floor((totalDiff / 1000) % 60)) || 0;
 
   // Fireworks & Confetti Animation on Canvas when Celebrating
   useEffect(() => {
@@ -52,13 +53,23 @@ export function NewYearCounterView({
     const ctx = canvas.getContext('2d');
     let animId;
 
-    let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
-    let height = (canvas.height = canvas.parentElement?.clientHeight || window.innerHeight);
+    const getCanvasDims = () => {
+      const pW = canvas.parentElement?.clientWidth;
+      const pH = canvas.parentElement?.clientHeight;
+      const w = pW && pW > 0 ? pW : (isMini ? 320 : window.innerWidth);
+      const h = pH && pH > 0 ? pH : (isMini ? 180 : Math.round(w * 9 / 16));
+      return { w, h };
+    };
+
+    let { w: width, h: height } = getCanvasDims();
+    canvas.width = width;
+    canvas.height = height;
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
-      height = canvas.height = canvas.parentElement?.clientHeight || window.innerHeight;
+      const dims = getCanvasDims();
+      width = canvas.width = dims.w;
+      height = canvas.height = dims.h;
     };
     window.addEventListener('resize', handleResize);
 
@@ -179,14 +190,14 @@ export function NewYearCounterView({
         position: 'relative',
         width: '100%',
         height: '100%',
-        minHeight: isMini ? '240px' : '420px',
+        minHeight: isMini ? '200px' : '360px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        padding: isMini ? '1rem' : '2.5rem',
+        padding: isMini ? '8px 12px' : '2.5rem',
         backgroundColor: bgColor,
         background: bgType === 'gradient' ? gradientBg : undefined,
         fontFamily: "'Inter', sans-serif"
@@ -253,14 +264,14 @@ export function NewYearCounterView({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: isMini ? '8px' : '20px',
+              gap: isMini ? '6px' : '20px',
               animation: 'celebrationPop 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
             {/* Glowing Giant Year with Okine Black Font */}
             <div
               style={{
-                fontSize: isMini ? 'clamp(3rem, 9vw, 5.2rem)' : 'clamp(5.5rem, 15vw, 13rem)',
+                fontSize: isMini ? 'clamp(2.6rem, 7vw, 4.2rem)' : 'clamp(5.5rem, 15vw, 13rem)',
                 fontWeight: 900,
                 lineHeight: 1,
                 letterSpacing: '-0.02em',
@@ -268,7 +279,7 @@ export function NewYearCounterView({
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 filter: 'drop-shadow(0 0 45px rgba(245, 158, 11, 0.7)) drop-shadow(0 8px 30px rgba(0,0,0,0.8))',
-                margin: isMini ? '2px 0' : '6px 0',
+                margin: isMini ? '1px 0' : '6px 0',
                 fontFamily: 'OkineBlack, Okine, sans-serif'
               }}
             >
@@ -278,7 +289,7 @@ export function NewYearCounterView({
             {/* Happy New Year Banner */}
             <div
               style={{
-                fontSize: isMini ? 'clamp(1.1rem, 3.8vw, 1.7rem)' : 'clamp(2rem, 4.4vw, 4rem)',
+                fontSize: isMini ? 'clamp(0.95rem, 3vw, 1.45rem)' : 'clamp(2rem, 4.4vw, 4rem)',
                 fontWeight: 900,
                 color: '#ffffff',
                 textShadow: '0 4px 20px rgba(0, 0, 0, 0.85), 0 0 32px rgba(245, 158, 11, 0.55)',
@@ -286,15 +297,15 @@ export function NewYearCounterView({
                 maxWidth: '92%'
               }}
             >
-              {isEn ? `HAPPY NEW YEAR ${targetYear}!` : `இனிய புத்தாண்டு நல்வாழ்த்துகள் ${targetYear}!`}
+              {customGreeting || (isEn ? `HAPPY NEW YEAR ${targetYear}!` : `இனிய புத்தாண்டு நல்வாழ்த்துகள் ${targetYear}!`)}
             </div>
 
             {/* Blessing Scripture Card */}
             <div
               style={{
                 maxWidth: isMini ? '95%' : '880px',
-                marginTop: isMini ? '4px' : '14px',
-                padding: isMini ? '8px 14px' : '18px 32px',
+                marginTop: isMini ? '3px' : '14px',
+                padding: isMini ? '6px 12px' : '18px 32px',
                 backgroundColor: 'rgba(0, 0, 0, 0.65)',
                 backdropFilter: 'blur(12px)',
                 borderRadius: isMini ? '8px' : '16px',
@@ -304,9 +315,9 @@ export function NewYearCounterView({
             >
               <p
                 style={{
-                  fontSize: isMini ? '0.72rem' : 'clamp(0.95rem, 1.7vw, 1.4rem)',
+                  fontSize: isMini ? '0.68rem' : 'clamp(0.95rem, 1.7vw, 1.4rem)',
                   color: '#fef3c7',
-                  lineHeight: 1.55,
+                  lineHeight: 1.45,
                   margin: 0,
                   fontStyle: 'italic',
                   fontWeight: 600
@@ -326,22 +337,22 @@ export function NewYearCounterView({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: isMini ? '10px' : '24px',
+              gap: isMini ? '6px' : '24px',
               width: '100%'
             }}
           >
-            {/* Aesthetic Header with Okine Black Target Year (Badge Removed!) */}
+            {/* Aesthetic Header with Okine Black Target Year */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '2px'
               }}
             >
               <div
                 style={{
-                  fontSize: isMini ? 'clamp(2.4rem, 8vw, 4.4rem)' : 'clamp(4.2rem, 10vw, 8.5rem)',
+                  fontSize: isMini ? 'clamp(1.8rem, 5.5vw, 3rem)' : 'clamp(4.2rem, 10vw, 8.5rem)',
                   fontWeight: 900,
                   lineHeight: 0.95,
                   letterSpacing: '-0.02em',
@@ -356,15 +367,15 @@ export function NewYearCounterView({
               </div>
               <div
                 style={{
-                  fontSize: isMini ? '0.72rem' : 'clamp(0.85rem, 1.6vw, 1.2rem)',
+                  fontSize: isMini ? '0.66rem' : 'clamp(0.85rem, 1.6vw, 1.2rem)',
                   fontWeight: 700,
-                  letterSpacing: '0.22em',
+                  letterSpacing: '0.2em',
                   textTransform: 'uppercase',
                   color: 'rgba(255, 255, 255, 0.85)',
                   textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)'
                 }}
               >
-                {isEn ? 'NEW YEAR COUNTDOWN' : 'புத்தாண்டு கவுண்டவுன்'}
+                {customGreeting || (isEn ? 'NEW YEAR COUNTDOWN' : 'புத்தாண்டு கவுண்டவுன்')}
               </div>
             </div>
 
@@ -373,9 +384,9 @@ export function NewYearCounterView({
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: isMini ? '8px' : 'clamp(12px, 2.4vw, 32px)',
+                gap: isMini ? '6px' : 'clamp(12px, 2.4vw, 32px)',
                 width: '100%',
-                maxWidth: isMini ? '360px' : '1020px'
+                maxWidth: isMini ? '380px' : '1020px'
               }}
             >
               {[
@@ -390,8 +401,8 @@ export function NewYearCounterView({
                     backgroundColor: 'rgba(15, 23, 42, 0.78)',
                     backdropFilter: 'blur(20px)',
                     border: '1.5px solid rgba(245, 158, 11, 0.38)',
-                    borderRadius: isMini ? '10px' : '20px',
-                    padding: isMini ? '8px 4px' : 'clamp(18px, 3vw, 34px) 16px',
+                    borderRadius: isMini ? '8px' : '20px',
+                    padding: isMini ? '6px 3px' : 'clamp(18px, 3vw, 34px) 16px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -414,7 +425,7 @@ export function NewYearCounterView({
                   />
                   <div
                     style={{
-                      fontSize: isMini ? 'clamp(1.5rem, 5.5vw, 2.4rem)' : 'clamp(3.2rem, 7.5vw, 6.4rem)',
+                      fontSize: isMini ? 'clamp(1.2rem, 3.8vw, 1.9rem)' : 'clamp(3.2rem, 7.5vw, 6.4rem)',
                       fontWeight: 900,
                       lineHeight: 1,
                       color: '#ffffff',
@@ -427,11 +438,11 @@ export function NewYearCounterView({
                   </div>
                   <div
                     style={{
-                      fontSize: isMini ? '0.55rem' : 'clamp(0.72rem, 1.2vw, 0.95rem)',
+                      fontSize: isMini ? '0.52rem' : 'clamp(0.72rem, 1.2vw, 0.95rem)',
                       fontWeight: 800,
-                      letterSpacing: '0.12em',
+                      letterSpacing: '0.1em',
                       color: '#fde047',
-                      marginTop: isMini ? '3px' : '10px',
+                      marginTop: isMini ? '2px' : '10px',
                       textTransform: 'uppercase'
                     }}
                   >
@@ -445,20 +456,20 @@ export function NewYearCounterView({
             <div
               style={{
                 maxWidth: isMini ? '95%' : '860px',
-                marginTop: isMini ? '4px' : '14px',
-                padding: isMini ? '8px 12px' : '14px 28px',
+                marginTop: isMini ? '3px' : '14px',
+                padding: isMini ? '5px 10px' : '14px 28px',
                 backgroundColor: 'rgba(0, 0, 0, 0.60)',
                 backdropFilter: 'blur(10px)',
-                borderRadius: isMini ? '8px' : '14px',
+                borderRadius: isMini ? '6px' : '14px',
                 border: '1px solid rgba(255, 255, 255, 0.18)',
                 boxShadow: '0 6px 24px rgba(0, 0, 0, 0.4)'
               }}
             >
               <p
                 style={{
-                  fontSize: isMini ? '0.66rem' : 'clamp(0.85rem, 1.4vw, 1.18rem)',
+                  fontSize: isMini ? '0.62rem' : 'clamp(0.85rem, 1.4vw, 1.18rem)',
                   color: 'rgba(255, 255, 255, 0.92)',
-                  lineHeight: 1.45,
+                  lineHeight: 1.4,
                   margin: 0,
                   fontStyle: 'italic',
                   fontWeight: 500

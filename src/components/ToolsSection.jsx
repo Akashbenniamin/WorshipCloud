@@ -27,7 +27,8 @@ import {
   X,
   Clock as ClockIcon,
   Tv,
-  PartyPopper
+  PartyPopper,
+  Maximize2
 } from 'lucide-react';
 import { NewYearCounterView, getNearestNewYear } from './NewYearCounterView';
 import { ChurchClockView } from './ChurchClockView';
@@ -179,6 +180,18 @@ const SAMPLE_LYRICS = `ஆவியானவரே ஆவியானவரே
 export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
   const isEn = uiLang === 'en';
 
+  // Responsive mobile state
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Mobile Download Preview Modal State: null | 'pptx' | 'pdf'
+  const [downloadPreviewType, setDownloadPreviewType] = useState(null);
+
   // Navigation State: null = Tools Hub, 'converter' = Lyrics to PDF/PPTX Converter, 'new-year-counter', 'clock'
   const [activeTool, setActiveTool] = useState(() => {
     try {
@@ -214,6 +227,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
   ];
 
   // New Year Counter State (Dynamic upcoming nearest New Year)
+  const [nyGreeting, setNyGreeting] = useState(isEn ? 'NEW YEAR COUNTDOWN' : 'புத்தாண்டு கவுண்டவுன்');
   const [nyVerse, setNyVerse] = useState(
     isEn 
       ? '"Behold, I will do a new thing; now it shall spring forth." — Isaiah 43:19'
@@ -224,6 +238,28 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
   const [nyTextureId, setNyTextureId] = useState('sunbeams_golden');
   const [nyOverlayOpacity, setNyOverlayOpacity] = useState(0.70);
   const [nyCelebrate, setNyCelebrate] = useState(false);
+  const [isNyFullscreen, setIsNyFullscreen] = useState(false);
+
+  // Hardware back button to exit mobile fullscreen New Year view
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isNyFullscreen) {
+        setIsNyFullscreen(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isNyFullscreen]);
+
+  const handleOpenNyFullscreen = () => {
+    setIsNyFullscreen(true);
+    window.history.pushState({ modal: 'ny_fullscreen' }, '');
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch {}
+  };
 
   // Church Clock State (No textures, larger time, vibrant gradients)
   const [clockFormat24h, setClockFormat24h] = useState(false);
@@ -248,6 +284,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
       title: isEn ? 'New Year Countdown' : 'புத்தாண்டு கவுண்டவுன்',
       targetDate: getNearestNewYear().getTime(),
       celebrate: nyCelebrate,
+      customGreeting: nyGreeting,
       customVerse: nyVerse,
       bgType: nyBgType,
       gradientBg: nyGradient,
@@ -268,6 +305,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         title: isEn ? 'New Year Countdown' : 'புத்தாண்டு கவுண்டவுன்',
         targetDate: getNearestNewYear().getTime(),
         celebrate: next,
+        customGreeting: nyGreeting,
         customVerse: nyVerse,
         bgType: nyBgType,
         gradientBg: nyGradient,
@@ -562,8 +600,9 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
       <div style={{
         height: '100%',
         overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         boxSizing: 'border-box',
-        padding: '1.5rem 2rem 3rem 2rem',
+        padding: isMobile ? '10px 10px 84px 10px' : '1.5rem 2rem 3rem 2rem',
         backgroundColor: 'var(--bg-canvas)'
       }}>
         {/* Top Header Card */}
@@ -571,32 +610,33 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '1rem 1.4rem',
+          padding: isMobile ? '0.75rem 0.85rem' : '1rem 1.4rem',
           borderRadius: '16px',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-sm)',
-          marginBottom: '1.75rem'
+          marginBottom: isMobile ? '0.85rem' : '1.75rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
+              width: isMobile ? '34px' : '42px',
+              height: isMobile ? '34px' : '42px',
+              borderRadius: '10px',
               backgroundColor: 'var(--accent-light)',
               color: 'var(--accent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              flexShrink: 0
             }}>
-              <Wrench size={22} />
+              <Wrench size={isMobile ? 18 : 22} />
             </div>
-            <div>
-              <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontSize: isMobile ? '1rem' : '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                 {isEn ? 'Worship Tools & Utilities' : 'ஆராதனைக் கருவிகள்'}
               </h1>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: isMobile ? '0.72rem' : '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0 0', lineHeight: 1.35 }}>
                 {isEn 
                   ? 'Select a tool below for church service preparation, media creation, and document export.' 
                   : 'ஆராதனை மற்றும் பாடல் சேவைக்கான பிரத்தியேக பயன்பாட்டுக் கருவிகள்.'}
@@ -608,8 +648,8 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         {/* Tools Selection Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-          gap: '1.25rem',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(340px, 1fr))',
+          gap: isMobile ? '8px' : '1.25rem',
           maxWidth: '1200px'
         }}>
           {/* Card 1: Lyrics to PDF/PPTX Converter */}
@@ -617,17 +657,18 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             onClick={() => setActiveTool('converter')}
             style={{
               backgroundColor: 'var(--bg-surface)',
-              borderRadius: '18px',
+              borderRadius: isMobile ? '14px' : '18px',
               border: '1px solid var(--border-subtle)',
-              padding: '1.5rem',
+              padding: isMobile ? '0.75rem 0.65rem' : '1.5rem',
               cursor: 'pointer',
               transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '220px',
+              minHeight: isMobile ? '160px' : '220px',
               boxShadow: 'var(--shadow-sm)',
-              position: 'relative'
+              position: 'relative',
+              boxSizing: 'border-box'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = 'var(--accent)';
@@ -641,36 +682,37 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? '0.5rem' : '1.1rem' }}>
                 <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '12px',
+                  width: isMobile ? '32px' : '46px',
+                  height: isMobile ? '32px' : '46px',
+                  borderRadius: isMobile ? '8px' : '12px',
                   backgroundColor: 'var(--accent-light)',
                   color: 'var(--accent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                  flexShrink: 0
                 }}>
-                  <Presentation size={24} />
+                  <Presentation size={isMobile ? 16 : 24} />
                 </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '3px' }}>
                   <span style={{
-                    fontSize: '0.68rem',
+                    fontSize: isMobile ? '0.56rem' : '0.68rem',
                     fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '6px',
+                    padding: isMobile ? '2px 4px' : '3px 8px',
+                    borderRadius: '4px',
                     backgroundColor: 'rgba(5, 150, 105, 0.12)',
                     color: '#059669'
                   }}>
                     PPTX
                   </span>
                   <span style={{
-                    fontSize: '0.68rem',
+                    fontSize: isMobile ? '0.56rem' : '0.68rem',
                     fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '6px',
+                    padding: isMobile ? '2px 4px' : '3px 8px',
+                    borderRadius: '4px',
                     backgroundColor: 'rgba(37, 99, 235, 0.12)',
                     color: '#2563eb'
                   }}>
@@ -679,12 +721,21 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
                 </div>
               </div>
 
-              <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
-                Lyrics to PDF/PPTX Converter
+              <h3 style={{ fontSize: isMobile ? '0.82rem' : '1.18rem', fontWeight: 800, color: 'var(--text-primary)', margin: isMobile ? '0 0 0.3rem 0' : '0 0 0.5rem 0', lineHeight: 1.25 }}>
+                Lyrics to PDF/PPTX
               </h3>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+              <p style={{
+                fontSize: isMobile ? '0.68rem' : '0.84rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.35,
+                margin: 0,
+                display: isMobile ? '-webkit-box' : undefined,
+                WebkitLineClamp: isMobile ? 2 : undefined,
+                WebkitBoxOrient: isMobile ? 'vertical' : undefined,
+                overflow: isMobile ? 'hidden' : undefined
+              }}>
                 {isEn 
-                  ? 'Convert worship song lyrics into formatted PowerPoint (.pptx) slides and printable song sheets (.pdf).'
+                  ? 'Convert worship song lyrics into formatted PowerPoint slides and printable song sheets.' 
                   : 'பாடல் வரிகளை தானாக பிரித்து PowerPoint (.pptx) ஸ்லைடுகளாகவும் PDF அச்சுத்தாள்களாகவும் மாற்றும் கருவி.'}
               </p>
             </div>
@@ -693,22 +744,25 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: '1.4rem',
-              paddingTop: '0.9rem',
-              borderTop: '1px solid var(--border-subtle)'
+              gap: '4px',
+              marginTop: isMobile ? '0.5rem' : '1.4rem',
+              paddingTop: isMobile ? '0.45rem' : '0.9rem',
+              borderTop: '1px solid var(--border-subtle)',
+              minWidth: 0
             }}>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', fontWeight: 650 }}>
-                {isEn ? '16:9 / 4:3 · Themes · Auto Stanzas' : '16:9 / 4:3 · வண்ணங்கள் · பத்தி பிரிப்பு'}
+              <span style={{ fontSize: isMobile ? '0.62rem' : '0.74rem', color: 'var(--text-tertiary)', fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                {isEn ? 'PPTX · PDF' : 'PPTX · PDF'}
               </span>
               <span style={{
-                fontSize: '0.82rem',
+                fontSize: isMobile ? '0.72rem' : '0.82rem',
                 fontWeight: 800,
                 color: 'var(--accent)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '1px',
+                flexShrink: 0
               }}>
-                {isEn ? 'Open Tool' : 'திறக்க'} <ChevronRight size={15} />
+                {isEn ? 'Open' : 'திறக்க'} <ChevronRight size={13} />
               </span>
             </div>
           </div>
@@ -718,17 +772,18 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             onClick={() => setActiveTool('new-year-counter')}
             style={{
               backgroundColor: 'var(--bg-surface)',
-              borderRadius: '18px',
+              borderRadius: isMobile ? '14px' : '18px',
               border: '1px solid var(--border-subtle)',
-              padding: '1.5rem',
+              padding: isMobile ? '0.75rem 0.65rem' : '1.5rem',
               cursor: 'pointer',
               transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '220px',
+              minHeight: isMobile ? '160px' : '220px',
               boxShadow: 'var(--shadow-sm)',
-              position: 'relative'
+              position: 'relative',
+              boxSizing: 'border-box'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = '#f59e0b';
@@ -742,27 +797,28 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? '0.5rem' : '1.1rem' }}>
                 <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '12px',
+                  width: isMobile ? '32px' : '46px',
+                  height: isMobile ? '32px' : '46px',
+                  borderRadius: isMobile ? '8px' : '12px',
                   backgroundColor: 'rgba(245, 158, 11, 0.14)',
                   color: '#f59e0b',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                  flexShrink: 0
                 }}>
-                  <PartyPopper size={24} />
+                  <PartyPopper size={isMobile ? 16 : 24} />
                 </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '3px' }}>
                   {isNewYearLive && (
                     <span style={{
-                      fontSize: '0.68rem',
+                      fontSize: isMobile ? '0.56rem' : '0.68rem',
                       fontWeight: 800,
-                      padding: '3px 8px',
-                      borderRadius: '6px',
+                      padding: isMobile ? '2px 4px' : '3px 8px',
+                      borderRadius: '4px',
                       backgroundColor: '#dc2626',
                       color: '#ffffff',
                       animation: 'pulseGlow 1.2s infinite'
@@ -771,22 +827,31 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
                     </span>
                   )}
                   <span style={{
-                    fontSize: '0.68rem',
+                    fontSize: isMobile ? '0.55rem' : '0.68rem',
                     fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '6px',
+                    padding: isMobile ? '2px 4px' : '3px 8px',
+                    borderRadius: '4px',
                     backgroundColor: 'rgba(245, 158, 11, 0.14)',
                     color: '#d97706'
                   }}>
-                    PROJECTABLE
+                    {isMobile ? 'FULLSCREEN' : 'PROJECTABLE'}
                   </span>
                 </div>
               </div>
 
-              <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
+              <h3 style={{ fontSize: isMobile ? '0.82rem' : '1.18rem', fontWeight: 800, color: 'var(--text-primary)', margin: isMobile ? '0 0 0.3rem 0' : '0 0 0.5rem 0', lineHeight: 1.25 }}>
                 {isEn ? 'New Year Countdown' : 'புத்தாண்டு கவுண்டவுன்'}
               </h3>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+              <p style={{
+                fontSize: isMobile ? '0.68rem' : '0.84rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.35,
+                margin: 0,
+                display: isMobile ? '-webkit-box' : undefined,
+                WebkitLineClamp: isMobile ? 2 : undefined,
+                WebkitBoxOrient: isMobile ? 'vertical' : undefined,
+                overflow: isMobile ? 'hidden' : undefined
+              }}>
                 {isEn 
                   ? 'Live countdown to the nearest New Year with midnight celebration transition animation & screen projection.' 
                   : 'அடுத்த புத்தாண்டிற்கான நேரடி கவுண்டவுன், நள்ளிரவு மாறுதல் அனிமேஷன் மற்றும் நேரடி திரையிடல்.'}
@@ -797,132 +862,135 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '8px',
-              marginTop: '1.4rem',
-              paddingTop: '0.9rem',
-              borderTop: '1px solid var(--border-subtle)'
+              gap: '4px',
+              marginTop: isMobile ? '0.5rem' : '1.4rem',
+              paddingTop: isMobile ? '0.45rem' : '0.9rem',
+              borderTop: '1px solid var(--border-subtle)',
+              minWidth: 0
             }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {isEn ? 'Live Countdown · Celebration' : 'நேரலை · அனிமேஷன்'}
+              <span style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: 'var(--text-tertiary)', fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                {isEn ? 'Countdown' : 'கவுண்டவுன்'}
               </span>
               <span style={{
-                fontSize: '0.82rem',
+                fontSize: isMobile ? '0.72rem' : '0.82rem',
                 fontWeight: 800,
                 color: '#f59e0b',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '1px',
                 flexShrink: 0
               }}>
-                {isEn ? 'Open Tool' : 'திறக்க'} <ChevronRight size={15} />
+                {isEn ? 'Open' : 'திறக்க'} <ChevronRight size={13} />
               </span>
             </div>
           </div>
 
-          {/* Card 3: Live Church Clock Tool */}
-          <div
-            onClick={() => setActiveTool('clock')}
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderRadius: '18px',
-              border: '1px solid var(--border-subtle)',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '220px',
-              boxShadow: 'var(--shadow-sm)',
-              position: 'relative'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#0284c7';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 10px 25px rgba(2, 132, 199, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.1rem' }}>
-                <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '12px',
-                  backgroundColor: 'rgba(2, 132, 199, 0.14)',
-                  color: '#0284c7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                }}>
-                  <ClockIcon size={24} />
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {isClockLive && (
+          {/* Card 3: Live Church Clock Tool (Hidden on Mobile) */}
+          {!isMobile && (
+            <div
+              onClick={() => setActiveTool('clock')}
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderRadius: '18px',
+                border: '1px solid var(--border-subtle)',
+                padding: '1.5rem',
+                cursor: 'pointer',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '220px',
+                boxShadow: 'var(--shadow-sm)',
+                position: 'relative'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#0284c7';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 10px 25px rgba(2, 132, 199, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.1rem' }}>
+                  <div style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(2, 132, 199, 0.14)',
+                    color: '#0284c7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                  }}>
+                    <ClockIcon size={24} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {isClockLive && (
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: '#dc2626',
+                        color: '#ffffff',
+                        animation: 'pulseGlow 1.2s infinite'
+                      }}>
+                        • LIVE
+                      </span>
+                    )}
                     <span style={{
                       fontSize: '0.68rem',
                       fontWeight: 800,
                       padding: '3px 8px',
                       borderRadius: '6px',
-                      backgroundColor: '#dc2626',
-                      color: '#ffffff',
-                      animation: 'pulseGlow 1.2s infinite'
+                      backgroundColor: 'rgba(2, 132, 199, 0.14)',
+                      color: '#0284c7'
                     }}>
-                      • LIVE
+                      PROJECTABLE
                     </span>
-                  )}
-                  <span style={{
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: 'rgba(2, 132, 199, 0.14)',
-                    color: '#0284c7'
-                  }}>
-                    PROJECTABLE
-                  </span>
+                  </div>
                 </div>
+
+                <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
+                  {isEn ? 'Church Clock' : 'ஆலய கடிகாரம்'}
+                </h3>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+                  {isEn 
+                    ? 'Full-screen liturgical digital clock for sanctuary projector screens with 12h/24h format and themes.' 
+                    : 'ஆராதனை நேரத்தில் பெரிய திரையில் நேரடி கடிகாரத்தை காட்ட உதவும் கருவி.'}
+                </p>
               </div>
 
-              <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
-                {isEn ? 'Church Clock' : 'ஆலய கடிகாரம்'}
-              </h3>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
-                {isEn 
-                  ? 'Full-screen liturgical digital clock for sanctuary projector screens with 12h/24h format and themes.' 
-                  : 'ஆராதனை நேரத்தில் பெரிய திரையில் நேரடி கடிகாரத்தை காட்ட உதவும் கருவி.'}
-              </p>
-            </div>
-
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              marginTop: '1.4rem',
-              paddingTop: '0.9rem',
-              borderTop: '1px solid var(--border-subtle)'
-            }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {isEn ? '12h / 24h · Full Screen' : '12h/24h · முழுத்திரை'}
-              </span>
-              <span style={{
-                fontSize: '0.82rem',
-                fontWeight: 800,
-                color: '#0284c7',
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                justifyContent: 'space-between',
+                gap: '8px',
+                marginTop: '1.4rem',
+                paddingTop: '0.9rem',
+                borderTop: '1px solid var(--border-subtle)'
               }}>
-                {isEn ? 'Open Tool' : 'திறக்க'} <ChevronRight size={15} />
-              </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {isEn ? '12h / 24h · Full Screen' : '12h/24h · முழுத்திரை'}
+                </span>
+                <span style={{
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  color: '#0284c7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  {isEn ? 'Open Tool' : 'திறக்க'} <ChevronRight size={15} />
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -940,7 +1008,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         flexDirection: 'column',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        padding: '0.5rem 1rem 0.6rem 1rem',
+        padding: isMobile ? '8px 0.5rem 64px 0.5rem' : '0.5rem 1rem 0.6rem 1rem',
         backgroundColor: 'var(--bg-canvas)'
       }}>
         {/* Top Navigation Bar */}
@@ -975,47 +1043,73 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               <span>{isEn ? 'Tools Hub' : 'கருவிகள்'}</span>
             </button>
             <div style={{ height: '16px', width: '1px', backgroundColor: 'var(--border-subtle)' }} />
-            <h2 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <PartyPopper size={18} style={{ color: '#f59e0b' }} />
-              <span>{isEn ? 'New Year Countdown' : 'புத்தாண்டு கவுண்டவுன்'}</span>
+            <h2 style={{ fontSize: isMobile ? '0.88rem' : '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
+              <PartyPopper size={isMobile ? 16 : 18} style={{ color: '#f59e0b' }} />
+              <span>{isEn ? 'Countdown' : 'கவுண்டவுன்'}</span>
             </h2>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {isNewYearLive && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {!isMobile && isNewYearLive && (
               <span style={{
-                fontSize: '0.72rem',
+                fontSize: '0.68rem',
                 fontWeight: 850,
-                padding: '4px 10px',
+                padding: '3px 8px',
                 borderRadius: '6px',
                 backgroundColor: '#dc2626',
                 color: '#ffffff',
                 animation: 'pulseGlow 1.2s infinite'
               }}>
-                • LIVE ON SCREEN
+                • LIVE
               </span>
             )}
-            <button
-              type="button"
-              onClick={handleProjectNewYear}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 16px',
-                borderRadius: '8px',
-                backgroundColor: isNewYearLive ? '#dc2626' : '#f59e0b',
-                color: '#ffffff',
-                border: 'none',
-                fontSize: '0.82rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.18)'
-              }}
-            >
-              <Tv size={15} />
-              <span>{isNewYearLive ? (isEn ? 'Stop Projecting' : 'திரையிடலை நிறுத்து') : (isEn ? 'Project to Screen' : 'திரையில் காட்டுக')}</span>
-            </button>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={handleOpenNyFullscreen}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: '#f59e0b',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Maximize2 size={14} />
+                <span>{isEn ? 'Fullscreen' : 'முழுத்திரை'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleProjectNewYear}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '7px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: isNewYearLive ? '#dc2626' : 'var(--accent)',
+                  color: 'var(--accent-contrast)',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Tv size={14} />
+                <span>{isNewYearLive ? (isEn ? 'Stop' : 'நிறுத்து') : (isEn ? 'Project Countdown' : 'கவுண்டவுனை திரையிடுக')}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -1023,23 +1117,26 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         <div style={{
           flex: 1,
           minHeight: 0,
-          display: 'grid',
-          gridTemplateColumns: '1.2fr 1fr',
-          gap: '1rem',
-          overflow: 'hidden'
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: isMobile ? 'column' : undefined,
+          gridTemplateColumns: isMobile ? undefined : '1.2fr 1fr',
+          gap: isMobile ? '0.75rem' : '1rem',
+          overflow: isMobile ? 'auto' : 'hidden'
         }}>
           {/* Left Column: Stage Preview */}
           <div style={{
-            height: '100%',
+            height: isMobile ? 'auto' : '100%',
             display: 'flex',
             flexDirection: 'column',
-            minHeight: 0,
+            justifyContent: 'flex-start',
+            minHeight: isMobile ? 'auto' : 0,
+            flexShrink: 0,
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '14px',
             border: '1px solid var(--border-subtle)',
             padding: '0.8rem',
             boxShadow: 'var(--shadow-sm)',
-            overflow: 'hidden'
+            overflow: isMobile ? 'visible' : 'auto'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
@@ -1051,8 +1148,10 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             </div>
 
             <div style={{
-              flex: 1,
               width: '100%',
+              aspectRatio: '16 / 9',
+              maxHeight: isMobile ? '260px' : '520px',
+              minHeight: isMobile ? '200px' : '320px',
               borderRadius: '10px',
               overflow: 'hidden',
               border: '1.5px solid var(--border-strong)',
@@ -1062,24 +1161,25 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               <NewYearCounterView
                 targetDate={getNearestNewYear().getTime()}
                 celebrate={nyCelebrate}
+                customGreeting={nyGreeting}
                 customVerse={nyVerse}
                 bgType={nyBgType}
                 gradientBg={nyGradient}
                 textureSrc={nyTexture?.src || './images/card-backgrounds/sunbeams-golden.jpg'}
                 bgOverlayOpacity={nyOverlayOpacity}
                 uiLang={uiLang}
-                isMini={false}
+                isMini={true}
               />
             </div>
           </div>
 
           {/* Right Column: Controls & Triggers */}
           <div style={{
-            height: '100%',
+            height: isMobile ? 'auto' : '100%',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.85rem',
-            overflowY: 'auto',
+            overflowY: isMobile ? 'visible' : 'auto',
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '14px',
             border: '1px solid var(--border-subtle)',
@@ -1272,6 +1372,101 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             </div>
           </div>
         </div>
+
+        {/* Mobile Fullscreen Landscape Mode for New Year Counter */}
+        {isNyFullscreen && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999999,
+              backgroundColor: '#000000',
+              overflow: 'hidden'
+            }}
+          >
+            <style>{`
+              @media (orientation: portrait) {
+                .ny-landscape-wrapper {
+                  width: 100vh !important;
+                  height: 100vw !important;
+                  transform: rotate(90deg) translate(0, -100vw) !important;
+                  transform-origin: top left !important;
+                }
+              }
+              @media (orientation: landscape) {
+                .ny-landscape-wrapper {
+                  width: 100vw !important;
+                  height: 100vh !important;
+                  transform: none !important;
+                }
+              }
+            `}</style>
+            <div
+              className="ny-landscape-wrapper"
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Close / Exit Button (50% opacity) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNyFullscreen(false);
+                  try {
+                    if (window.history.state?.modal === 'ny_fullscreen') {
+                      window.history.back();
+                    }
+                  } catch {}
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  zIndex: 1000,
+                  opacity: 0.5,
+                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(4px)',
+                  WebkitBackdropFilter: 'blur(4px)',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.5'; }}
+                title={isEn ? 'Exit Fullscreen' : 'வெளியேறு'}
+              >
+                <X size={20} />
+              </button>
+
+              <NewYearCounterView
+                targetDate={getNearestNewYear().getTime()}
+                celebrate={nyCelebrate}
+                customGreeting={nyGreeting}
+                customVerse={nyVerse}
+                bgType={nyBgType}
+                gradientBg={nyGradient}
+                textureSrc={nyTexture?.src || './images/card-backgrounds/sunbeams-golden.jpg'}
+                bgOverlayOpacity={nyOverlayOpacity}
+                uiLang={uiLang}
+                isMini={false}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1280,7 +1475,6 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
   // VIEW: CHURCH CLOCK TOOL
   // =========================================================================
   if (activeTool === 'clock') {
-    const clockTexture = SLIDE_TEXTURES.find(t => t.id === clockTextureId);
     return (
       <div style={{
         height: '100%',
@@ -1288,7 +1482,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         flexDirection: 'column',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        padding: '0.5rem 1rem 0.6rem 1rem',
+        padding: isMobile ? '8px 0.5rem 64px 0.5rem' : '0.5rem 1rem 0.6rem 1rem',
         backgroundColor: 'var(--bg-canvas)'
       }}>
         {/* Top Navigation Bar */}
@@ -1323,24 +1517,24 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               <span>{isEn ? 'Tools Hub' : 'கருவிகள்'}</span>
             </button>
             <div style={{ height: '16px', width: '1px', backgroundColor: 'var(--border-subtle)' }} />
-            <h2 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ClockIcon size={18} style={{ color: '#0284c7' }} />
-              <span>{isEn ? 'Church Clock' : 'ஆலய கடிகாரம்'}</span>
+            <h2 style={{ fontSize: isMobile ? '0.88rem' : '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
+              <ClockIcon size={isMobile ? 16 : 18} style={{ color: '#0284c7' }} />
+              <span>{isEn ? 'Clock' : 'கடிகாரம்'}</span>
             </h2>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {isClockLive && (
               <span style={{
-                fontSize: '0.72rem',
+                fontSize: '0.68rem',
                 fontWeight: 850,
-                padding: '4px 10px',
+                padding: '3px 8px',
                 borderRadius: '6px',
                 backgroundColor: '#dc2626',
                 color: '#ffffff',
                 animation: 'pulseGlow 1.2s infinite'
               }}>
-                • LIVE ON SCREEN
+                • LIVE
               </span>
             )}
             <button
@@ -1349,20 +1543,21 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '7px 16px',
+                gap: '5px',
+                padding: isMobile ? '6px 10px' : '7px 16px',
                 borderRadius: '8px',
                 backgroundColor: isClockLive ? '#dc2626' : '#0284c7',
                 color: '#ffffff',
                 border: 'none',
-                fontSize: '0.82rem',
+                fontSize: isMobile ? '0.75rem' : '0.82rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.18)'
+                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                whiteSpace: 'nowrap'
               }}
             >
-              <Tv size={15} />
-              <span>{isClockLive ? (isEn ? 'Stop Projecting' : 'திரையிடலை நிறுத்து') : (isEn ? 'Project Clock' : 'கடிகாரத்தை திரையிடுக')}</span>
+              <Tv size={14} />
+              <span>{isClockLive ? (isEn ? 'Stop' : 'நிறுத்து') : (isMobile ? (isEn ? 'Project' : 'திரையிடுக') : (isEn ? 'Project Clock' : 'கடிகாரத்தை திரையிடுக'))}</span>
             </button>
           </div>
         </div>
@@ -1371,23 +1566,26 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         <div style={{
           flex: 1,
           minHeight: 0,
-          display: 'grid',
-          gridTemplateColumns: '1.2fr 1fr',
-          gap: '1rem',
-          overflow: 'hidden'
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: isMobile ? 'column' : undefined,
+          gridTemplateColumns: isMobile ? undefined : '1.2fr 1fr',
+          gap: isMobile ? '0.75rem' : '1rem',
+          overflow: isMobile ? 'auto' : 'hidden'
         }}>
           {/* Left Column: Stage Preview */}
           <div style={{
-            height: '100%',
+            height: isMobile ? 'auto' : '100%',
             display: 'flex',
             flexDirection: 'column',
-            minHeight: 0,
+            justifyContent: 'flex-start',
+            minHeight: isMobile ? 'auto' : 0,
+            flexShrink: 0,
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '14px',
             border: '1px solid var(--border-subtle)',
             padding: '0.8rem',
             boxShadow: 'var(--shadow-sm)',
-            overflow: 'hidden'
+            overflow: isMobile ? 'visible' : 'auto'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
@@ -1399,8 +1597,10 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             </div>
 
             <div style={{
-              flex: 1,
               width: '100%',
+              aspectRatio: '16 / 9',
+              maxHeight: isMobile ? '260px' : '520px',
+              minHeight: isMobile ? '200px' : '320px',
               borderRadius: '10px',
               overflow: 'hidden',
               border: '1.5px solid var(--border-strong)',
@@ -1414,18 +1614,18 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
                 gradientBg={clockGradient}
                 animatedBg={clockAnimatedBg}
                 uiLang={uiLang}
-                isMini={false}
+                isMini={true}
               />
             </div>
           </div>
 
           {/* Right Column: Controls & Settings */}
           <div style={{
-            height: '100%',
+            height: isMobile ? 'auto' : '100%',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.85rem',
-            overflowY: 'auto',
+            overflowY: isMobile ? 'visible' : 'auto',
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '14px',
             border: '1px solid var(--border-subtle)',
@@ -1590,7 +1790,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
       flexDirection: 'column',
       overflow: 'hidden',
       boxSizing: 'border-box',
-      padding: '0.5rem 1rem 0.6rem 1rem',
+      padding: isMobile ? '8px 0.5rem 64px 0.5rem' : '0.5rem 1rem 0.6rem 1rem',
       backgroundColor: 'var(--bg-canvas)'
     }}>
       {/* Top Navigation & Title Bar */}
@@ -1655,30 +1855,32 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
         </div>
       </div>
 
-      {/* Main 2-Column Area: Left Slides, Right Controls */}
+      {/* Main Area: Desktop 2-Column (Left Slides, Right Controls), Mobile 1-Column (Controls Only) */}
       <div style={{
         flex: 1,
         minHeight: 0,
-        display: 'grid',
-        gridTemplateColumns: '1.15fr 1fr',
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
+        gridTemplateColumns: isMobile ? undefined : '1.15fr 1fr',
         gap: '0.85rem',
-        overflow: 'hidden'
+        overflow: isMobile ? 'auto' : 'hidden'
       }}>
         {/* =================================================================== */}
-        {/* LEFT COLUMN: Slide Cards Preview (Scrollable & Sized for 3+ Slides) */}
+        {/* LEFT COLUMN: Slide Cards Preview (Desktop Only)                     */}
         {/* =================================================================== */}
-        <div style={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-          overflow: 'hidden',
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: '14px',
-          border: '1px solid var(--border-subtle)',
-          padding: '0.8rem',
-          boxShadow: 'var(--shadow-sm)'
-        }}>
+        {!isMobile && (
+          <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            overflow: 'hidden',
+            backgroundColor: 'var(--bg-surface)',
+            borderRadius: '14px',
+            border: '1px solid var(--border-subtle)',
+            padding: '0.8rem',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
           {/* Slides Header Bar with View Toggle */}
           <div style={{
             display: 'flex',
@@ -1958,6 +2160,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
             })}
           </div>
         </div>
+      )}
 
         {/* =================================================================== */}
         {/* RIGHT COLUMN: Compact Controls & Settings Panel                     */}
@@ -1971,9 +2174,11 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
           backgroundColor: 'var(--bg-surface)',
           borderRadius: '14px',
           border: '1px solid var(--border-subtle)',
-          padding: '0.85rem 1rem',
+          padding: isMobile ? '0.75rem' : '0.85rem 1rem',
           gap: '0.75rem',
-          boxShadow: 'var(--shadow-sm)'
+          boxShadow: 'var(--shadow-sm)',
+          width: isMobile ? '100%' : undefined,
+          boxSizing: 'border-box'
         }}>
           {/* 1. Song Details & Library Quick Picker */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -3188,7 +3393,13 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
           }}>
             <button
               type="button"
-              onClick={handleExportPptx}
+              onClick={() => {
+                if (isMobile) {
+                  setDownloadPreviewType('pptx');
+                } else {
+                  handleExportPptx();
+                }
+              }}
               disabled={isExportingPptx}
               style={{
                 flex: 1.2,
@@ -3215,7 +3426,13 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
 
             <button
               type="button"
-              onClick={handleExportPdf}
+              onClick={() => {
+                if (isMobile) {
+                  setDownloadPreviewType('pdf');
+                } else {
+                  handleExportPdf();
+                }
+              }}
               disabled={isExportingPdf}
               style={{
                 flex: 1.1,
@@ -3264,6 +3481,297 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
           </div>
         </div>
       </div>
+
+      {/* Mobile Download Preview Modal */}
+      {isMobile && downloadPreviewType && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            boxSizing: 'border-box'
+          }}
+          onClick={() => setDownloadPreviewType(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              maxHeight: '90vh',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '16px',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              borderBottom: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface)',
+              flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {downloadPreviewType === 'pptx' ? (
+                  <Presentation size={18} style={{ color: '#059669' }} />
+                ) : (
+                  <FileDown size={18} style={{ color: 'var(--accent)' }} />
+                )}
+                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {isEn
+                    ? `Download Preview (${downloadPreviewType.toUpperCase()})`
+                    : `பதிவிறக்க முன்னோட்டம் (${downloadPreviewType.toUpperCase()})`}
+                </span>
+                <span style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 750,
+                  color: 'var(--accent)',
+                  backgroundColor: 'var(--accent-light)',
+                  padding: '2px 8px',
+                  borderRadius: '5px'
+                }}>
+                  {totalSlides} {isEn ? 'Slides' : 'ஸ்லைடுகள்'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDownloadPreviewType(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body: Scrollable slide deck preview */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '12px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              backgroundColor: 'var(--bg-canvas)'
+            }}>
+              {/* Title Slide Preview */}
+              {includeTitleSlide && (() => {
+                const { titleSize, subtitleSize } = calculateTitleSlideFontSize(songTitle, subtitle, aspectRatio);
+                const alignFlex = textAlign === 'left' ? 'flex-start' : (textAlign === 'right' ? 'flex-end' : 'center');
+                return (
+                  <div>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 750, color: 'var(--text-tertiary)', marginBottom: '4px' }}>
+                      #1 {isEn ? 'Title Slide' : 'தலைப்பு ஸ்லைடு'}
+                    </div>
+                    <SlidePreviewFrame
+                      aspectRatio={aspectRatio}
+                      bgType={bgType}
+                      bgColor={activeStyle.bg}
+                      textColor={activeStyle.text}
+                      borderColor={activeStyle.border}
+                      textureSrc={activeTextureSrc}
+                      bgOverlayOpacity={bgOverlayOpacity}
+                      textAlign={textAlign}
+                    >
+                      <div style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: alignFlex,
+                        justifyContent: 'center',
+                        textAlign: textAlign,
+                        width: '100%',
+                        transform: 'translateY(-4px)',
+                        gap: '18px'
+                      }}>
+                        <div style={{
+                          fontSize: `${titleSize}px`,
+                          fontWeight: 800,
+                          color: activeStyle.text,
+                          lineHeight: 1.25,
+                          fontFamily: getFontFamilyCss(fontFamily),
+                          wordBreak: 'break-word',
+                          maxWidth: '90%',
+                          textShadow: bgType === 'texture' ? '0 2px 12px rgba(0,0,0,0.85)' : 'none'
+                        }}>
+                          {songTitle || (isEn ? 'Song Title' : 'பாடல் தலைப்பு')}
+                        </div>
+                        {subtitle && (
+                          <div style={{
+                            fontSize: `${subtitleSize}px`,
+                            fontWeight: 600,
+                            color: activeStyle.text,
+                            opacity: 0.85,
+                            lineHeight: 1.4,
+                            fontFamily: getFontFamilyCss(fontFamily),
+                            wordBreak: 'break-word',
+                            maxWidth: '85%',
+                            textShadow: bgType === 'texture' ? '0 2px 12px rgba(0,0,0,0.85)' : 'none'
+                          }}>
+                            {subtitle}
+                          </div>
+                        )}
+                      </div>
+                    </SlidePreviewFrame>
+                  </div>
+                );
+              })()}
+
+              {/* Stanza Slides Previews */}
+              {previewSections.map((section, idx) => {
+                const slideIndex = includeTitleSlide ? idx + 2 : idx + 1;
+                const lines = section.lines && section.lines.length > 0 ? section.lines : section.text.split('\n');
+                const stanzaFontSize = calculateSlideFontSize(lines, fontSize, aspectRatio);
+                const alignFlex = textAlign === 'left' ? 'flex-start' : (textAlign === 'right' ? 'flex-end' : 'center');
+
+                return (
+                  <div key={section.id || idx}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 750, color: 'var(--text-tertiary)', marginBottom: '4px' }}>
+                      #{slideIndex}
+                    </div>
+                    <SlidePreviewFrame
+                      aspectRatio={aspectRatio}
+                      bgType={bgType}
+                      bgColor={activeStyle.bg}
+                      textColor={activeStyle.text}
+                      borderColor={activeStyle.border}
+                      textureSrc={activeTextureSrc}
+                      bgOverlayOpacity={bgOverlayOpacity}
+                      textAlign={textAlign}
+                    >
+                      <div style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: alignFlex,
+                        justifyContent: 'center',
+                        textAlign: textAlign,
+                        width: '100%',
+                        transform: 'translateY(-4px)',
+                        fontSize: `${stanzaFontSize}px`,
+                        fontWeight: 650,
+                        lineHeight: 1.48,
+                        fontFamily: getFontFamilyCss(fontFamily),
+                        wordBreak: 'break-word',
+                        maxWidth: '92%',
+                        textShadow: bgType === 'texture' ? '0 2px 10px rgba(0,0,0,0.85)' : 'none'
+                      }}>
+                        {lines.map((line, lIdx) => {
+                          const isAlternate = alternateEvenLines && (lIdx % 2 === 1);
+                          const lineClr = isAlternate ? evenLineColor : activeStyle.text;
+                          return (
+                            <div
+                              key={lIdx}
+                              style={{
+                                color: lineClr,
+                                width: '100%',
+                                textAlign: textAlign,
+                                fontWeight: isAlternate ? 750 : 650
+                              }}
+                            >
+                              {line}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </SlidePreviewFrame>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer: Cancel and Confirm Download Button */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '10px',
+              padding: '12px 16px',
+              borderTop: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface)',
+              flexShrink: 0
+            }}>
+              <button
+                type="button"
+                onClick={() => setDownloadPreviewType(null)}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                {isEn ? 'Cancel' : 'ரத்து செய்'}
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (downloadPreviewType === 'pptx') {
+                    await handleExportPptx();
+                  } else if (downloadPreviewType === 'pdf') {
+                    await handleExportPdf();
+                  }
+                  setDownloadPreviewType(null);
+                }}
+                disabled={isExportingPptx || isExportingPdf}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  backgroundColor: downloadPreviewType === 'pptx' ? '#059669' : 'var(--accent)',
+                  color: '#ffffff',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: (isExportingPptx || isExportingPdf) ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                }}
+              >
+                {(isExportingPptx || isExportingPdf) ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : downloadPreviewType === 'pptx' ? (
+                  <Presentation size={16} />
+                ) : (
+                  <FileDown size={16} />
+                )}
+                <span>
+                  {isEn
+                    ? `Confirm Download ${downloadPreviewType.toUpperCase()}`
+                    : `${downloadPreviewType.toUpperCase()} பதிவிறக்கு`}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

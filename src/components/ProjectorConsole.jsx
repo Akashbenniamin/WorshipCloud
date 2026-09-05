@@ -2615,7 +2615,8 @@ export function ProjectorConsole({
                       celebrate={selectedSlide.celebrate}
                       customGreeting={selectedSlide.customGreeting || selectedSlide.title}
                       customVerse={selectedSlide.customVerse || selectedSlide.body}
-                      bgType={selectedSlide.bgType || 'texture'}
+                      bgType={selectedSlide.bgType || 'gradient'}
+                      gradientBg={selectedSlide.gradientBg}
                       textureSrc={selectedSlide.textureSrc || './images/card-backgrounds/sunbeams-golden.jpg'}
                       bgOverlayOpacity={selectedSlide.bgOverlayOpacity ?? 0.70}
                       bgColor={selectedSlide.backgroundColor || '#090d16'}
@@ -2629,10 +2630,12 @@ export function ProjectorConsole({
                       serviceTitle={selectedSlide.serviceTitle || selectedSlide.title}
                       format24h={selectedSlide.format24h}
                       showSeconds={selectedSlide.showSeconds ?? true}
-                      bgType={selectedSlide.bgType || 'texture'}
+                      bgType={selectedSlide.bgType || 'gradient'}
+                      gradientBg={selectedSlide.gradientBg}
                       textureSrc={selectedSlide.textureSrc || './images/card-backgrounds/clouds-golden.jpg'}
                       bgOverlayOpacity={selectedSlide.bgOverlayOpacity ?? 0.70}
                       bgColor={selectedSlide.backgroundColor || '#090d16'}
+                      animatedBg={selectedSlide.animatedBg ?? true}
                       isMini={true}
                       uiLang={uiLang}
                     />
