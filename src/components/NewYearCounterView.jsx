@@ -401,7 +401,7 @@ export function NewYearCounterView({
             {/* ROW 1: DAYS (Dedicated Separate Row occupying full width) */}
             <div
               style={{
-                flex: '1.2',
+                flex: '1.25',
                 minHeight: 0,
                 width: '100%',
                 backgroundColor: 'rgba(15, 23, 42, 0.85)',
@@ -413,8 +413,8 @@ export function NewYearCounterView({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: isMini ? '12px' : 'clamp(16px, 3.5cqi, 40px)',
-                padding: isMini ? '4px 10px' : '8px 24px',
+                gap: isMini ? '12px' : 'clamp(16px, 4cqi, 48px)',
+                padding: '2px 14px',
                 position: 'relative',
                 overflow: 'hidden',
                 boxSizing: 'border-box'
@@ -432,16 +432,16 @@ export function NewYearCounterView({
                 }}
               />
 
-              {/* Days Number */}
+              {/* Days Number - Occupies ~90% of box */}
               <div
                 style={{
-                  fontSize: isMini ? 'clamp(2rem, 8.5cqi, 4.2rem)' : 'clamp(3.8rem, 11cqi, 9.5rem)',
+                  fontSize: isMini ? 'clamp(2.8rem, 11cqi, 5.5rem)' : 'clamp(5.2rem, 14.5cqi, 13rem)',
                   fontWeight: 900,
-                  lineHeight: 0.95,
+                  lineHeight: 0.88,
                   color: '#ffffff',
                   fontFamily: 'OkineBlack, Okine, monospace',
                   letterSpacing: '-0.02em',
-                  textShadow: '0 0 35px rgba(245, 158, 11, 0.85), 0 4px 18px rgba(0,0,0,0.95)'
+                  textShadow: '0 0 40px rgba(245, 158, 11, 0.9), 0 4px 18px rgba(0,0,0,0.95)'
                 }}
               >
                 {days}
@@ -458,7 +458,7 @@ export function NewYearCounterView({
               >
                 <div
                   style={{
-                    fontSize: isMini ? '0.78rem' : 'clamp(1.1rem, 2.5cqi, 2.4rem)',
+                    fontSize: isMini ? '0.82rem' : 'clamp(1.25rem, 2.8cqi, 2.8rem)',
                     fontWeight: 900,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
@@ -471,7 +471,7 @@ export function NewYearCounterView({
                 </div>
                 <div
                   style={{
-                    fontSize: isMini ? '0.52rem' : 'clamp(0.68rem, 1.1cqi, 1rem)',
+                    fontSize: isMini ? '0.54rem' : 'clamp(0.72rem, 1.2cqi, 1.15rem)',
                     fontWeight: 700,
                     letterSpacing: '0.16em',
                     textTransform: 'uppercase',
@@ -487,7 +487,7 @@ export function NewYearCounterView({
             {/* ROW 2: HOURS, MINUTES, SECONDS (Next row with 3 equal columns) */}
             <div
               style={{
-                flex: '1.2',
+                flex: '1.25',
                 minHeight: 0,
                 width: '100%',
                 display: 'grid',
@@ -516,7 +516,7 @@ export function NewYearCounterView({
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(245, 158, 11, 0.12)',
                     position: 'relative',
                     overflow: 'hidden',
-                    padding: isMini ? '2px 4px' : '6px 12px'
+                    padding: '2px 4px'
                   }}
                 >
                   {/* Top light sheen */}
@@ -531,30 +531,31 @@ export function NewYearCounterView({
                     }}
                   />
 
-                  {/* Digit */}
+                  {/* Digit - Occupies ~90% of box */}
                   <div
                     style={{
-                      fontSize: isMini ? 'clamp(1.5rem, 5.5cqi, 3rem)' : 'clamp(2.8rem, 7cqi, 6.8rem)',
+                      fontSize: isMini ? 'clamp(2.1rem, 7.8cqi, 4.4rem)' : 'clamp(4.2rem, 10.2cqi, 10rem)',
                       fontWeight: 900,
-                      lineHeight: 0.95,
+                      lineHeight: 0.85,
                       color: '#ffffff',
                       fontFamily: 'OkineBlack, Okine, monospace',
                       letterSpacing: '-0.02em',
-                      textShadow: '0 0 28px rgba(245, 158, 11, 0.75), 0 4px 14px rgba(0,0,0,0.9)'
+                      textShadow: '0 0 32px rgba(245, 158, 11, 0.8), 0 4px 14px rgba(0,0,0,0.95)'
                     }}
                   >
                     {String(slot.val).padStart(2, '0')}
                   </div>
 
-                  {/* Label */}
+                  {/* Label - Compact bottom badge */}
                   <div
                     style={{
-                      fontSize: isMini ? '0.54rem' : 'clamp(0.72rem, 1.3cqi, 1.25rem)',
+                      fontSize: isMini ? '0.52rem' : 'clamp(0.68rem, 1.2cqi, 1.15rem)',
                       fontWeight: 800,
                       letterSpacing: '0.12em',
                       color: '#fde047',
-                      marginTop: isMini ? '1px' : '4px',
-                      textTransform: 'uppercase'
+                      marginTop: '1px',
+                      textTransform: 'uppercase',
+                      lineHeight: 1
                     }}
                   >
                     {isEn ? slot.labelEn : slot.labelTa}
