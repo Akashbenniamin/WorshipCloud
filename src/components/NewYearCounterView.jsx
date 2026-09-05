@@ -197,11 +197,11 @@ export function NewYearCounterView({
         justifyContent: 'stretch',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        padding: '5px',
+        padding: '6px',
         backgroundColor: bgColor,
         background: bgType === 'gradient' ? gradientBg : undefined,
         fontFamily: "'Inter', sans-serif",
-        containerType: 'inline-size'
+        containerType: 'size'
       }}
     >
       {/* Texture Background Layer if active */}
@@ -358,14 +358,14 @@ export function NewYearCounterView({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: isMini ? '8px' : '16px',
-                padding: isMini ? '1px 0' : '3px 0',
+                gap: 'clamp(8px, 1.5cqi, 16px)',
+                padding: '2px 0',
                 flexShrink: 0
               }}
             >
               <span
                 style={{
-                  fontSize: isMini ? 'clamp(1.3rem, 5cqi, 2.6rem)' : 'clamp(2.2rem, 5.5cqi, 4.4rem)',
+                  fontSize: 'clamp(1.5rem, 5.5cqb, 3.8rem)',
                   fontWeight: 900,
                   lineHeight: 1,
                   fontFamily: 'OkineBlack, Okine, sans-serif',
@@ -379,14 +379,14 @@ export function NewYearCounterView({
               </span>
               <div
                 style={{
-                  height: isMini ? '16px' : '26px',
+                  height: 'clamp(16px, 3.2cqb, 30px)',
                   width: '2px',
                   backgroundColor: 'rgba(245, 158, 11, 0.5)'
                 }}
               />
               <span
                 style={{
-                  fontSize: isMini ? '0.62rem' : 'clamp(0.8rem, 1.35cqi, 1.25rem)',
+                  fontSize: 'clamp(0.75rem, 2.2cqb, 1.4rem)',
                   fontWeight: 800,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
@@ -408,13 +408,13 @@ export function NewYearCounterView({
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '1.5px solid rgba(245, 158, 11, 0.45)',
-                borderRadius: isMini ? '8px' : '16px',
+                borderRadius: '16px',
                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(245, 158, 11, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: isMini ? '12px' : 'clamp(16px, 4cqi, 48px)',
-                padding: '2px 14px',
+                gap: 'clamp(16px, 4cqi, 60px)',
+                padding: '2px 16px',
                 position: 'relative',
                 overflow: 'hidden',
                 boxSizing: 'border-box'
@@ -432,16 +432,16 @@ export function NewYearCounterView({
                 }}
               />
 
-              {/* Days Number - Occupies ~90% of box */}
+              {/* Days Number - Occupies ~90% of box height */}
               <div
                 style={{
-                  fontSize: isMini ? 'clamp(2.8rem, 11cqi, 5.5rem)' : 'clamp(5.2rem, 14.5cqi, 13rem)',
+                  fontSize: 'clamp(3.8rem, 30cqb, 22rem)',
                   fontWeight: 900,
-                  lineHeight: 0.88,
+                  lineHeight: 0.82,
                   color: '#ffffff',
                   fontFamily: 'OkineBlack, Okine, monospace',
                   letterSpacing: '-0.02em',
-                  textShadow: '0 0 40px rgba(245, 158, 11, 0.9), 0 4px 18px rgba(0,0,0,0.95)'
+                  textShadow: '0 0 45px rgba(245, 158, 11, 0.9), 0 4px 20px rgba(0,0,0,0.95)'
                 }}
               >
                 {days}
@@ -458,22 +458,22 @@ export function NewYearCounterView({
               >
                 <div
                   style={{
-                    fontSize: isMini ? '0.82rem' : 'clamp(1.25rem, 2.8cqi, 2.8rem)',
+                    fontSize: 'clamp(1.4rem, 6cqb, 4.5rem)',
                     fontWeight: 900,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
                     color: '#fde047',
-                    lineHeight: 1.1,
-                    textShadow: '0 0 20px rgba(245, 158, 11, 0.6)'
+                    lineHeight: 1.05,
+                    textShadow: '0 0 24px rgba(245, 158, 11, 0.65)'
                   }}
                 >
                   {isEn ? 'DAYS' : 'நாட்கள்'}
                 </div>
                 <div
                   style={{
-                    fontSize: isMini ? '0.54rem' : 'clamp(0.72rem, 1.2cqi, 1.15rem)',
+                    fontSize: 'clamp(0.7rem, 2.4cqb, 1.8rem)',
                     fontWeight: 700,
-                    letterSpacing: '0.16em',
+                    letterSpacing: '0.18em',
                     textTransform: 'uppercase',
                     color: 'rgba(255, 255, 255, 0.75)',
                     marginTop: '2px'
@@ -492,7 +492,7 @@ export function NewYearCounterView({
                 width: '100%',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: isMini ? '4px' : '8px',
+                gap: 'clamp(4px, 1cqi, 10px)',
                 boxSizing: 'border-box'
               }}
             >
@@ -508,7 +508,7 @@ export function NewYearCounterView({
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     border: '1.5px solid rgba(245, 158, 11, 0.4)',
-                    borderRadius: isMini ? '8px' : '16px',
+                    borderRadius: '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -534,13 +534,13 @@ export function NewYearCounterView({
                   {/* Digit - Occupies ~90% of box */}
                   <div
                     style={{
-                      fontSize: isMini ? 'clamp(2.1rem, 7.8cqi, 4.4rem)' : 'clamp(4.2rem, 10.2cqi, 10rem)',
+                      fontSize: 'clamp(3.2rem, 25cqb, 18rem)',
                       fontWeight: 900,
-                      lineHeight: 0.85,
+                      lineHeight: 0.82,
                       color: '#ffffff',
                       fontFamily: 'OkineBlack, Okine, monospace',
                       letterSpacing: '-0.02em',
-                      textShadow: '0 0 32px rgba(245, 158, 11, 0.8), 0 4px 14px rgba(0,0,0,0.95)'
+                      textShadow: '0 0 35px rgba(245, 158, 11, 0.85), 0 4px 16px rgba(0,0,0,0.95)'
                     }}
                   >
                     {String(slot.val).padStart(2, '0')}
@@ -549,11 +549,11 @@ export function NewYearCounterView({
                   {/* Label - Compact bottom badge */}
                   <div
                     style={{
-                      fontSize: isMini ? '0.52rem' : 'clamp(0.68rem, 1.2cqi, 1.15rem)',
+                      fontSize: 'clamp(0.68rem, 2.6cqb, 2rem)',
                       fontWeight: 800,
                       letterSpacing: '0.12em',
                       color: '#fde047',
-                      marginTop: '1px',
+                      marginTop: '2px',
                       textTransform: 'uppercase',
                       lineHeight: 1
                     }}
@@ -568,11 +568,11 @@ export function NewYearCounterView({
             <div
               style={{
                 width: '100%',
-                padding: isMini ? '3px 8px' : '7px 18px',
+                padding: '6px 18px',
                 backgroundColor: 'rgba(0, 0, 0, 0.65)',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
-                borderRadius: isMini ? '6px' : '10px',
+                borderRadius: '8px',
                 border: '1px solid rgba(255, 255, 255, 0.18)',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
                 boxSizing: 'border-box',
@@ -581,7 +581,7 @@ export function NewYearCounterView({
             >
               <p
                 style={{
-                  fontSize: isMini ? '0.58rem' : 'clamp(0.78rem, 1.25cqi, 1.15rem)',
+                  fontSize: 'clamp(0.72rem, 2.2cqb, 1.4rem)',
                   color: 'rgba(255, 255, 255, 0.95)',
                   lineHeight: 1.35,
                   margin: 0,
