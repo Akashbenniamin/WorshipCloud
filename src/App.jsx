@@ -20,12 +20,25 @@ import { pullCloudSettings, syncSaveSettings } from './lib/userSettingsStore';
 export function App() {
   // Check if this window is running as dedicated projector output (for 2nd monitor)
   const [isProjectorRoute, setIsProjectorRoute] = useState(() => {
-    return window.location.hash === '#projector' || window.location.search.includes('projector=true');
+    return window.location.hash === '#projector-display' || window.location.search.includes('projector=true');
+  });
+
+  // Navigation State: 'home' | 'bible' | 'songs' | 'projector' | 'daily' | 'tools'
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (['home', 'bible', 'songs', 'projector', 'daily', 'tools'].includes(hash)) {
+      return hash;
+    }
+    return localStorage.getItem('worship_cloud_active_tab') || 'home';
   });
 
   useEffect(() => {
     const handleHashChange = () => {
-      setIsProjectorRoute(window.location.hash === '#projector' || window.location.search.includes('projector=true'));
+      const hash = (window.location.hash || '').replace(/^#/, '');
+      setIsProjectorRoute(window.location.hash === '#projector-display' || window.location.search.includes('projector=true'));
+      if (['home', 'bible', 'songs', 'projector', 'daily', 'tools'].includes(hash)) {
+        setActiveTab(hash);
+      }
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -87,11 +100,6 @@ export function App() {
       setIsInstallModalOpen(true);
     }
   };
-
-  // Navigation State: 'home' | 'bible' | 'songs' | 'projector' | 'daily' | 'tools'
-  const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('worship_cloud_active_tab') || 'home';
-  });
 
   // Guard: mobile does not have projector/live section
   useEffect(() => {
@@ -185,10 +193,45 @@ export function App() {
     localStorage.setItem('worship_cloud_ui_lang', uiLang);
   }, [uiLang]);
 
-  // Persist active tab
+  // Persist active tab & update document title / URL hash for rich SEO & sharing
   useEffect(() => {
     localStorage.setItem('worship_cloud_active_tab', activeTab);
-  }, [activeTab]);
+    
+    // Update hash gracefully without reloading or breaking state
+    if (window.location.hash !== `#${activeTab}` && !window.location.hash.includes('projector-display')) {
+      if (activeTab === 'home') {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else {
+        history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${activeTab}`);
+      }
+    }
+
+    // Dynamic SEO Titles per Section
+    const titleMap = {
+      home: uiLang === 'ta'
+        ? 'Worship Cloud · தமிழ் வேதாகமம் & பாடல்கள் | Tamil Bible & Songs'
+        : 'Worship Cloud · Tamil Bible, Christian Songs Lyrics & Free Church Projector',
+      bible: uiLang === 'ta'
+        ? 'தமிழ் வேதாகமம் (Tamil Bible Online - BSI & KJV) · Worship Cloud'
+        : 'Tamil Bible Online (BSI & KJV Scripture Reader) · Worship Cloud',
+      songs: uiLang === 'ta'
+        ? 'தமிழ் கிறிஸ்தவ பாடல்கள் வரிகள் (18,700+ Songs Lyrics) · Worship Cloud'
+        : 'Tamil Christian Songs Lyrics (18,700+ Catalog) · Worship Cloud',
+      projector: uiLang === 'ta'
+        ? 'இலவச சர்ச் ப்ரொஜெக்டர் (Live Church Projector) · Worship Cloud'
+        : 'Free Church Sanctuary Projector & Presentation · Worship Cloud',
+      daily: uiLang === 'ta'
+        ? 'அன்றாட வசனம் (Daily Bible Verse & Promises) · Worship Cloud'
+        : 'Daily Bible Verse & Promises · Worship Cloud',
+      tools: uiLang === 'ta'
+        ? 'கருவிகள் (Tamil Christian PPTX & PDF Slide Generator) · Worship Cloud'
+        : 'Tools & Slide Generator (Tamil Christian PPTX/PDF) · Worship Cloud'
+    };
+
+    if (titleMap[activeTab]) {
+      document.title = titleMap[activeTab];
+    }
+  }, [activeTab, uiLang]);
 
   // Persist current book/chapter
   useEffect(() => {

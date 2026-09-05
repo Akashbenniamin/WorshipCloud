@@ -65,7 +65,7 @@ export function useProjectorSync() {
         channelRef.current = new BroadcastChannel(CHANNEL_NAME);
         channelRef.current.onmessage = (event) => {
           if (event?.data?.type === 'CLOSE_PROJECTOR_WINDOW') {
-            if (typeof window !== 'undefined' && (window.location.hash === '#projector' || window.location.search.includes('projector=true'))) {
+            if (typeof window !== 'undefined' && (window.location.hash === '#projector-display' || window.location.hash === '#projector' || window.location.search.includes('projector=true'))) {
               window.close();
             }
             return;
@@ -450,7 +450,7 @@ export function useProjectorSync() {
   }, [broadcastState]);
 
   const openProjectorWindow = useCallback(() => {
-    const url = window.location.origin + window.location.pathname + '#projector';
+    const url = window.location.origin + window.location.pathname + '#projector-display';
     const features = 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no';
     
     // Save current state right before opening

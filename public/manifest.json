@@ -1,7 +1,7 @@
 {
-  "name": "Sharon AG Church - Worship Cloud",
+  "name": "Worship Cloud · தமிழ் வேதாகமம் & பாடல்கள் | Tamil Bible, Songs & Church Projector",
   "short_name": "Worship Cloud",
-  "description": "Tamil Bible, Worship Songs Lyrics, Daily Verses & Church Presentation Tools",
+  "description": "Complete Tamil Bible (BSI New Ortho + KJV), 18,700+ Tamil Christian Songs Lyrics & Free Live Church Sanctuary Projector Web App",
   "start_url": "./",
   "id": "./",
   "scope": "./",
@@ -9,7 +9,7 @@
   "background_color": "#0f172a",
   "theme_color": "#d97706",
   "orientation": "any",
-  "categories": ["lifestyle", "utilities", "books"],
+  "categories": ["lifestyle", "utilities", "books", "music", "education"],
   "icons": [
     {
       "src": "favicon.svg",

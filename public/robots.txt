@@ -1,0 +1,5 @@
+# Robots.txt for Worship Cloud (Tamil Bible, Songs & Church Projector)
+User-agent: *
+Allow: /
+
+Sitemap: https://akashbenniamin.github.io/WorshipCloud/sitemap.xml

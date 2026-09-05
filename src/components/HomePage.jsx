@@ -546,6 +546,20 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
             ? '“சத்தியத்தை அறிவீர்கள், சத்தியம் உங்களை விடுதலையாக்கும்.” — யோவான் 8:32'
             : '"And ye shall know the truth, and the truth shall make you free." — John 8:32'}
         </div>
+
+        {/* CRAWLER-INDEXABLE KEYWORD TAGLINE */}
+        <div style={{
+          marginTop: isMobile ? '0.2rem' : '0.4rem',
+          fontSize: isMobile ? '0.62rem' : '0.74rem',
+          color: 'var(--accent)',
+          fontWeight: 600,
+          letterSpacing: '0.03em',
+          opacity: 0.88
+        }}>
+          {uiLang === 'ta'
+            ? 'தமிழ் வேதாகமம் · 18,700+ கிறிஸ்தவ பாடல்கள் வரிகள் · சர்ச் ப்ரொஜெக்டர்'
+            : 'Tamil Bible · 18,700+ Christian Songs Lyrics · Free Church Projector'}
+        </div>
       </div>
 
       {/* 4. CENTER STAGE: CARDS IN MIDDLE OVER AMBIENT CLOUDS */}
