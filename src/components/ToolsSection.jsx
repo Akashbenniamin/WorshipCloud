@@ -1168,7 +1168,7 @@ export function ToolsSection({ songsIndex = [], uiLang = 'ta', projector }) {
                 textureSrc={nyTexture?.src || './images/card-backgrounds/sunbeams-golden.jpg'}
                 bgOverlayOpacity={nyOverlayOpacity}
                 uiLang={uiLang}
-                isMini={true}
+                isMini={isMobile}
               />
             </div>
           </div>

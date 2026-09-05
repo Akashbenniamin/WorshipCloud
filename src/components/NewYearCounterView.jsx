@@ -193,14 +193,15 @@ export function NewYearCounterView({
         minHeight: isMini ? '200px' : '360px',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: 'stretch',
+        justifyContent: 'stretch',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        padding: isMini ? '8px 12px' : '2.5rem',
+        padding: '5px',
         backgroundColor: bgColor,
         background: bgType === 'gradient' ? gradientBg : undefined,
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        containerType: 'inline-size'
       }}
     >
       {/* Texture Background Layer if active */}
@@ -240,46 +241,50 @@ export function NewYearCounterView({
         }}
       />
 
-      {/* Primary Content Card Container */}
+      {/* Primary Content Container - Occupies 100% space with 5px padding */}
       <div
         style={{
           position: 'relative',
           zIndex: 4,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: 'stretch',
+          justifyContent: 'stretch',
           textAlign: 'center',
           width: '100%',
-          maxWidth: isMini ? '100%' : '1240px'
+          height: '100%',
+          boxSizing: 'border-box'
         }}
       >
         {isCelebrationActive ? (
           /* ========================================================================= */
-          /* CELEBRATION MODE: HAPPY NEW YEAR WITH OKINE BLACK YEAR                   */
+          /* CELEBRATION MODE: ULTRA-MASSIVE 2027 VISIBLE FROM THE VERY BACK OF HALL  */
           /* ========================================================================= */
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: isMini ? '6px' : '20px',
+              justifyContent: 'space-evenly',
+              width: '100%',
+              height: '100%',
+              padding: '2px',
+              boxSizing: 'border-box',
               animation: 'celebrationPop 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            {/* Glowing Giant Year with Okine Black Font */}
+            {/* GIGANTIC YEAR - Visible from the very back of the hall */}
             <div
               style={{
-                fontSize: isMini ? 'clamp(2.6rem, 7vw, 4.2rem)' : 'clamp(5.5rem, 15vw, 13rem)',
+                fontSize: isMini ? 'clamp(3.8rem, 18cqi, 8.5rem)' : 'clamp(8rem, 27cqi, 24rem)',
                 fontWeight: 900,
-                lineHeight: 1,
-                letterSpacing: '-0.02em',
-                background: 'linear-gradient(135deg, #ffffff 0%, #fef08a 35%, #f59e0b 70%, #d97706 100%)',
+                lineHeight: 0.88,
+                letterSpacing: '-0.03em',
+                background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 20%, #fde047 45%, #f59e0b 70%, #d97706 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 0 45px rgba(245, 158, 11, 0.7)) drop-shadow(0 8px 30px rgba(0,0,0,0.8))',
-                margin: isMini ? '1px 0' : '6px 0',
+                filter: 'drop-shadow(0 0 60px rgba(245, 158, 11, 0.9)) drop-shadow(0 0 120px rgba(245, 158, 11, 0.6)) drop-shadow(0 12px 45px rgba(0,0,0,0.95))',
+                margin: 0,
                 fontFamily: 'OkineBlack, Okine, sans-serif'
               }}
             >
@@ -289,108 +294,209 @@ export function NewYearCounterView({
             {/* Happy New Year Banner */}
             <div
               style={{
-                fontSize: isMini ? 'clamp(0.95rem, 3vw, 1.45rem)' : 'clamp(2rem, 4.4vw, 4rem)',
+                fontSize: isMini ? 'clamp(1rem, 4cqi, 2rem)' : 'clamp(2.2rem, 5.5cqi, 5rem)',
                 fontWeight: 900,
                 color: '#ffffff',
-                textShadow: '0 4px 20px rgba(0, 0, 0, 0.85), 0 0 32px rgba(245, 158, 11, 0.55)',
-                lineHeight: 1.25,
-                maxWidth: '92%'
+                textShadow: '0 4px 24px rgba(0, 0, 0, 0.9), 0 0 36px rgba(245, 158, 11, 0.75)',
+                lineHeight: 1.15,
+                width: '100%',
+                padding: '0 6px'
               }}
             >
-              {customGreeting || (isEn ? `HAPPY NEW YEAR ${targetYear}!` : `இனிய புத்தாண்டு நல்வாழ்த்துகள் ${targetYear}!`)}
+              {(customGreeting && !customGreeting.includes('கவுண்டவுன்') && !customGreeting.toLowerCase().includes('countdown'))
+                ? customGreeting
+                : (isEn ? `HAPPY NEW YEAR ${targetYear}!` : `இனிய புத்தாண்டு நல்வாழ்த்துகள் ${targetYear}!`)}
             </div>
 
             {/* Blessing Scripture Card */}
             <div
               style={{
-                maxWidth: isMini ? '95%' : '880px',
-                marginTop: isMini ? '3px' : '14px',
-                padding: isMini ? '6px 12px' : '18px 32px',
-                backgroundColor: 'rgba(0, 0, 0, 0.65)',
-                backdropFilter: 'blur(12px)',
-                borderRadius: isMini ? '8px' : '16px',
-                border: '1px solid rgba(245, 158, 11, 0.45)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.55)'
+                width: '100%',
+                maxWidth: '96%',
+                padding: isMini ? '5px 12px' : '12px 32px',
+                backgroundColor: 'rgba(0, 0, 0, 0.72)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderRadius: isMini ? '8px' : '14px',
+                border: '1.5px solid rgba(245, 158, 11, 0.55)',
+                boxShadow: '0 8px 36px rgba(0, 0, 0, 0.65)'
               }}
             >
               <p
                 style={{
-                  fontSize: isMini ? '0.68rem' : 'clamp(0.95rem, 1.7vw, 1.4rem)',
+                  fontSize: isMini ? '0.66rem' : 'clamp(0.92rem, 1.6cqi, 1.4rem)',
                   color: '#fef3c7',
-                  lineHeight: 1.45,
+                  lineHeight: 1.4,
                   margin: 0,
                   fontStyle: 'italic',
                   fontWeight: 600
                 }}
               >
-                {customVerse || defaultCelebrationVerse}
+                {(customVerse && !customVerse.includes('43:19')) ? customVerse : defaultCelebrationVerse}
               </p>
             </div>
           </div>
         ) : (
           /* ========================================================================= */
-          /* COUNTDOWN TICKER: ULTRA-AESTHETIC OKINE YEAR & GLOWING DIGIT CARDS       */
+          /* COUNTDOWN TICKER: SEPARATE DAYS ROW + 3-COLUMN (HOURS/MIN/SEC) ROW        */
           /* ========================================================================= */
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: isMini ? '6px' : '24px',
-              width: '100%'
+              alignItems: 'stretch',
+              justifyContent: 'space-between',
+              width: '100%',
+              height: '100%',
+              gap: '4px',
+              boxSizing: 'border-box'
             }}
           >
-            {/* Aesthetic Header with Okine Black Target Year */}
+            {/* Header: Target Year & Subtitle */}
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '2px'
+                justifyContent: 'center',
+                gap: isMini ? '8px' : '16px',
+                padding: isMini ? '1px 0' : '3px 0',
+                flexShrink: 0
               }}
             >
-              <div
+              <span
                 style={{
-                  fontSize: isMini ? 'clamp(1.8rem, 5.5vw, 3rem)' : 'clamp(4.2rem, 10vw, 8.5rem)',
+                  fontSize: isMini ? 'clamp(1.3rem, 5cqi, 2.6rem)' : 'clamp(2.2rem, 5.5cqi, 4.4rem)',
                   fontWeight: 900,
-                  lineHeight: 0.95,
-                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
                   fontFamily: 'OkineBlack, Okine, sans-serif',
                   background: 'linear-gradient(135deg, #ffffff 10%, #fef08a 45%, #f59e0b 80%, #d97706 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 35px rgba(245, 158, 11, 0.55)) drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7))'
+                  filter: 'drop-shadow(0 0 25px rgba(245, 158, 11, 0.6)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.8))'
                 }}
               >
                 {targetYear}
-              </div>
+              </span>
               <div
                 style={{
-                  fontSize: isMini ? '0.66rem' : 'clamp(0.85rem, 1.6vw, 1.2rem)',
-                  fontWeight: 700,
-                  letterSpacing: '0.2em',
+                  height: isMini ? '16px' : '26px',
+                  width: '2px',
+                  backgroundColor: 'rgba(245, 158, 11, 0.5)'
+                }}
+              />
+              <span
+                style={{
+                  fontSize: isMini ? '0.62rem' : 'clamp(0.8rem, 1.35cqi, 1.25rem)',
+                  fontWeight: 800,
+                  letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)'
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.7)'
                 }}
               >
                 {customGreeting || (isEn ? 'NEW YEAR COUNTDOWN' : 'புத்தாண்டு கவுண்டவுன்')}
+              </span>
+            </div>
+
+            {/* ROW 1: DAYS (Dedicated Separate Row occupying full width) */}
+            <div
+              style={{
+                flex: '1.2',
+                minHeight: 0,
+                width: '100%',
+                backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1.5px solid rgba(245, 158, 11, 0.45)',
+                borderRadius: isMini ? '8px' : '16px',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(245, 158, 11, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: isMini ? '12px' : 'clamp(16px, 3.5cqi, 40px)',
+                padding: isMini ? '4px 10px' : '8px 24px',
+                position: 'relative',
+                overflow: 'hidden',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Subtle top light sheen on card */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '10%',
+                  right: '10%',
+                  height: '1.5px',
+                  background: 'linear-gradient(90deg, transparent, rgba(254, 240, 138, 0.9), transparent)'
+                }}
+              />
+
+              {/* Days Number */}
+              <div
+                style={{
+                  fontSize: isMini ? 'clamp(2rem, 8.5cqi, 4.2rem)' : 'clamp(3.8rem, 11cqi, 9.5rem)',
+                  fontWeight: 900,
+                  lineHeight: 0.95,
+                  color: '#ffffff',
+                  fontFamily: 'OkineBlack, Okine, monospace',
+                  letterSpacing: '-0.02em',
+                  textShadow: '0 0 35px rgba(245, 158, 11, 0.85), 0 4px 18px rgba(0,0,0,0.95)'
+                }}
+              >
+                {days}
+              </div>
+
+              {/* Days Label & Badge */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: isMini ? '0.78rem' : 'clamp(1.1rem, 2.5cqi, 2.4rem)',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: '#fde047',
+                    lineHeight: 1.1,
+                    textShadow: '0 0 20px rgba(245, 158, 11, 0.6)'
+                  }}
+                >
+                  {isEn ? 'DAYS' : 'நாட்கள்'}
+                </div>
+                <div
+                  style={{
+                    fontSize: isMini ? '0.52rem' : 'clamp(0.68rem, 1.1cqi, 1rem)',
+                    fontWeight: 700,
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255, 255, 255, 0.75)',
+                    marginTop: '2px'
+                  }}
+                >
+                  {isEn ? 'REMAINING' : 'மீதமுள்ளவை'}
+                </div>
               </div>
             </div>
 
-            {/* Four Aesthetic Glassmorphic Glowing Digital Cards */}
+            {/* ROW 2: HOURS, MINUTES, SECONDS (Next row with 3 equal columns) */}
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: isMini ? '6px' : 'clamp(12px, 2.4vw, 32px)',
+                flex: '1.2',
+                minHeight: 0,
                 width: '100%',
-                maxWidth: isMini ? '380px' : '1020px'
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: isMini ? '4px' : '8px',
+                boxSizing: 'border-box'
               }}
             >
               {[
-                { val: days, labelTa: 'நாட்கள்', labelEn: 'DAYS' },
                 { val: hours, labelTa: 'மணி', labelEn: 'HOURS' },
                 { val: minutes, labelTa: 'நிமிடம்', labelEn: 'MINUTES' },
                 { val: seconds, labelTa: 'விநாடி', labelEn: 'SECONDS' }
@@ -398,51 +504,56 @@ export function NewYearCounterView({
                 <div
                   key={idx}
                   style={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
                     backdropFilter: 'blur(20px)',
-                    border: '1.5px solid rgba(245, 158, 11, 0.38)',
-                    borderRadius: isMini ? '8px' : '20px',
-                    padding: isMini ? '6px 3px' : 'clamp(18px, 3vw, 34px) 16px',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1.5px solid rgba(245, 158, 11, 0.4)',
+                    borderRadius: isMini ? '8px' : '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(245, 158, 11, 0.12)',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(245, 158, 11, 0.12)',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    padding: isMini ? '2px 4px' : '6px 12px'
                   }}
                 >
-                  {/* Subtle top light sheen on digit card */}
+                  {/* Top light sheen */}
                   <div
                     style={{
                       position: 'absolute',
                       top: 0,
-                      left: '15%',
-                      right: '15%',
-                      height: '1px',
+                      left: '12%',
+                      right: '12%',
+                      height: '1.5px',
                       background: 'linear-gradient(90deg, transparent, rgba(254, 240, 138, 0.8), transparent)'
                     }}
                   />
+
+                  {/* Digit */}
                   <div
                     style={{
-                      fontSize: isMini ? 'clamp(1.2rem, 3.8vw, 1.9rem)' : 'clamp(3.2rem, 7.5vw, 6.4rem)',
+                      fontSize: isMini ? 'clamp(1.5rem, 5.5cqi, 3rem)' : 'clamp(2.8rem, 7cqi, 6.8rem)',
                       fontWeight: 900,
-                      lineHeight: 1,
+                      lineHeight: 0.95,
                       color: '#ffffff',
                       fontFamily: 'OkineBlack, Okine, monospace',
                       letterSpacing: '-0.02em',
-                      textShadow: '0 0 28px rgba(245, 158, 11, 0.7), 0 4px 14px rgba(0,0,0,0.9)'
+                      textShadow: '0 0 28px rgba(245, 158, 11, 0.75), 0 4px 14px rgba(0,0,0,0.9)'
                     }}
                   >
                     {String(slot.val).padStart(2, '0')}
                   </div>
+
+                  {/* Label */}
                   <div
                     style={{
-                      fontSize: isMini ? '0.52rem' : 'clamp(0.72rem, 1.2vw, 0.95rem)',
+                      fontSize: isMini ? '0.54rem' : 'clamp(0.72rem, 1.3cqi, 1.25rem)',
                       fontWeight: 800,
-                      letterSpacing: '0.1em',
+                      letterSpacing: '0.12em',
                       color: '#fde047',
-                      marginTop: isMini ? '2px' : '10px',
+                      marginTop: isMini ? '1px' : '4px',
                       textTransform: 'uppercase'
                     }}
                   >
@@ -452,27 +563,32 @@ export function NewYearCounterView({
               ))}
             </div>
 
-            {/* Scripture Promise Banner at Bottom */}
+            {/* Bottom Row: Scripture Promise Banner */}
             <div
               style={{
-                maxWidth: isMini ? '95%' : '860px',
-                marginTop: isMini ? '3px' : '14px',
-                padding: isMini ? '5px 10px' : '14px 28px',
-                backgroundColor: 'rgba(0, 0, 0, 0.60)',
+                width: '100%',
+                padding: isMini ? '3px 8px' : '7px 18px',
+                backgroundColor: 'rgba(0, 0, 0, 0.65)',
                 backdropFilter: 'blur(10px)',
-                borderRadius: isMini ? '6px' : '14px',
+                WebkitBackdropFilter: 'blur(10px)',
+                borderRadius: isMini ? '6px' : '10px',
                 border: '1px solid rgba(255, 255, 255, 0.18)',
-                boxShadow: '0 6px 24px rgba(0, 0, 0, 0.4)'
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+                boxSizing: 'border-box',
+                flexShrink: 0
               }}
             >
               <p
                 style={{
-                  fontSize: isMini ? '0.62rem' : 'clamp(0.85rem, 1.4vw, 1.18rem)',
-                  color: 'rgba(255, 255, 255, 0.92)',
-                  lineHeight: 1.4,
+                  fontSize: isMini ? '0.58rem' : 'clamp(0.78rem, 1.25cqi, 1.15rem)',
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  lineHeight: 1.35,
                   margin: 0,
                   fontStyle: 'italic',
-                  fontWeight: 500
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}
               >
                 {customVerse || defaultCountdownVerse}
