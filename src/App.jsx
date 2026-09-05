@@ -153,7 +153,7 @@ export function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       syncSaveSettings({ theme, fontSize, uiLang }, auth.user);
-    }, 400);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [theme, fontSize, uiLang, auth.user]);
 

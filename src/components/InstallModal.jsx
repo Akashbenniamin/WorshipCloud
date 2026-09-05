@@ -124,7 +124,7 @@ export function InstallModal({
             }}
           >
             <img
-              src="/favicon.svg"
+              src="./favicon.svg"
               alt="Worship Cloud Logo"
               style={{ width: '42px', height: '42px', borderRadius: '10px', flexShrink: 0 }}
             />

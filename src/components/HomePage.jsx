@@ -404,8 +404,8 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
       <div
         style={{
           position: 'absolute',
-          top: '-30px',
-          left: '-60px',
+          top: '-20px',
+          left: '-80px',
           width: '580px',
           pointerEvents: 'none',
           zIndex: 2,
@@ -414,7 +414,7 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
         }}
       >
         <img
-          src="/images/clouds/cloud-1.png"
+          src="./images/clouds/cloud-1.png"
           alt=""
           style={{
             width: '100%',
@@ -440,7 +440,7 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
         }}
       >
         <img
-          src="/images/clouds/cloud-2.png"
+          src="./images/clouds/cloud-2.png"
           alt=""
           style={{
             width: '100%',
@@ -466,7 +466,7 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
         }}
       >
         <img
-          src="/images/clouds/cloud-center.png"
+          src="./images/clouds/cloud-center.png"
           alt=""
           style={{
             width: '100%',
@@ -494,7 +494,7 @@ export function HomePage({ onNavigate, uiLang = 'ta' }) {
         }}
       >
         <img
-          src="/images/clouds/cloud-4.png"
+          src="./images/clouds/cloud-4.png"
           alt=""
           style={{
             width: '100%',

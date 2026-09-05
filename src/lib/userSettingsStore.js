@@ -29,6 +29,8 @@ export function saveLocalDeviceSettings(settings) {
   } catch {}
 }
 
+let lastSyncedSettingsPayload = '';
+
 /**
  * Save settings to both local storage and user cloud metadata
  */
@@ -38,9 +40,15 @@ export async function syncSaveSettings(settings, user) {
   if (!user) return;
 
   const deviceKey = isMobileDevice() ? 'settings_mobile' : 'settings_pc';
+  const payloadStr = `${user.id || user.email}_${deviceKey}_${JSON.stringify(settings)}`;
+  if (payloadStr === lastSyncedSettingsPayload) {
+    return;
+  }
+
   try {
     const supabase = getSupabaseClient();
     if (supabase) {
+      lastSyncedSettingsPayload = payloadStr;
       await supabase.auth.updateUser({
         data: {
           [deviceKey]: settings
@@ -48,6 +56,8 @@ export async function syncSaveSettings(settings, user) {
       });
     }
   } catch (err) {
+    // Reset cache on error so a subsequent attempt can retry
+    lastSyncedSettingsPayload = '';
     console.warn('Failed to save user settings to Supabase cloud:', err);
   }
 }
