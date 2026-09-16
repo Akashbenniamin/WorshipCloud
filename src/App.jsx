@@ -25,6 +25,9 @@ export function App() {
 
   // Navigation State: 'home' | 'bible' | 'songs' | 'projector' | 'daily' | 'tools'
   const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('song')) return 'songs';
+    if (urlParams.get('book')) return 'bible';
     const hash = (window.location.hash || '').replace(/^#/, '');
     if (['home', 'bible', 'songs', 'projector', 'daily', 'tools'].includes(hash)) {
       return hash;
@@ -33,15 +36,28 @@ export function App() {
   });
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = (window.location.hash || '').replace(/^#/, '');
+    const handleNavigationChange = () => {
       setIsProjectorRoute(window.location.hash === '#projector-display' || window.location.search.includes('projector=true'));
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('song')) {
+        setActiveTab('songs');
+        return;
+      }
+      if (urlParams.get('book')) {
+        setActiveTab('bible');
+        return;
+      }
+      const hash = (window.location.hash || '').replace(/^#/, '');
       if (['home', 'bible', 'songs', 'projector', 'daily', 'tools'].includes(hash)) {
         setActiveTab(hash);
       }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleNavigationChange);
+    window.addEventListener('popstate', handleNavigationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleNavigationChange);
+      window.removeEventListener('popstate', handleNavigationChange);
+    };
   }, []);
 
   // Shared projector sync hook instance
@@ -113,12 +129,22 @@ export function App() {
 
   // Bible Reader State
   const [currentBookCode, setCurrentBookCode] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookParam = urlParams.get('book');
+    if (bookParam) return bookParam.toUpperCase();
     return localStorage.getItem('ortho_current_book') || 'GEN';
   });
   const [currentChapter, setCurrentChapter] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const chParam = urlParams.get('chapter');
+    if (chParam && parseInt(chParam, 10) > 0) return parseInt(chParam, 10);
     return parseInt(localStorage.getItem('ortho_current_chapter') || '1', 10);
   });
-  const [targetVerse, setTargetVerse] = useState(null);
+  const [targetVerse, setTargetVerse] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const vParam = urlParams.get('verse');
+    return vParam && parseInt(vParam, 10) > 0 ? parseInt(vParam, 10) : null;
+  });
 
   // Settings & Themes
   const [theme, setTheme] = useState(() => {
@@ -171,6 +197,21 @@ export function App() {
     return [...userSongs, ...(songsIndex || [])];
   }, [songsIndex, userSongs]);
 
+  // If ?song=<id> is in URL, auto-select it when songsIndex loads
+  useEffect(() => {
+    if (combinedSongsIndex && combinedSongsIndex.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const songParam = urlParams.get('song');
+      if (songParam) {
+        const found = combinedSongsIndex.find((s) => s.id === songParam);
+        if (found) {
+          setSelectedSongForViewer(found);
+          setActiveTab('songs');
+        }
+      }
+    }
+  }, [combinedSongsIndex]);
+
   const handleAddCustomSong = async (songData) => {
     const result = await addCustomSong({ ...songData, user: auth.user });
     setUserSongs(result.songs);
@@ -206,32 +247,44 @@ export function App() {
       }
     }
 
-    // Dynamic SEO Titles per Section
-    const titleMap = {
-      home: uiLang === 'ta'
-        ? 'Worship Cloud · தமிழ் வேதாகமம் & பாடல்கள் | Tamil Bible & Songs'
-        : 'Worship Cloud · Tamil Bible, Christian Songs Lyrics & Free Church Projector',
-      bible: uiLang === 'ta'
-        ? 'தமிழ் வேதாகமம் (Tamil Bible Online - BSI & KJV) · Worship Cloud'
-        : 'Tamil Bible Online (BSI & KJV Scripture Reader) · Worship Cloud',
-      songs: uiLang === 'ta'
-        ? 'தமிழ் கிறிஸ்தவ பாடல்கள் வரிகள் (18,700+ Songs Lyrics) · Worship Cloud'
-        : 'Tamil Christian Songs Lyrics (18,700+ Catalog) · Worship Cloud',
-      projector: uiLang === 'ta'
-        ? 'இலவச சர்ச் ப்ரொஜெக்டர் (Live Church Projector) · Worship Cloud'
-        : 'Free Church Sanctuary Projector & Presentation · Worship Cloud',
-      daily: uiLang === 'ta'
-        ? 'அன்றாட வசனம் (Daily Bible Verse & Promises) · Worship Cloud'
-        : 'Daily Bible Verse & Promises · Worship Cloud',
-      tools: uiLang === 'ta'
-        ? 'கருவிகள் (Tamil Christian PPTX & PDF Slide Generator) · Worship Cloud'
-        : 'Tools & Slide Generator (Tamil Christian PPTX/PDF) · Worship Cloud'
-    };
+    // Dynamic SEO Titles per Section & Active Content (Tamil + Tanglish for search engines)
+    if (activeTab === 'songs' && selectedSongForViewer) {
+      const tamilTitle = selectedSongForViewer.t || selectedSongForViewer.title || '';
+      const tanglishTitle = selectedSongForViewer.q || selectedSongForViewer.tanglish || '';
+      document.title = `${tamilTitle} (${tanglishTitle}) · பாடல் வரிகள் Tamil Christian Songs Lyrics | Worship Cloud`;
+    } else if (activeTab === 'bible' && booksMeta.length > 0) {
+      const book = booksMeta.find((b) => b.code === currentBookCode);
+      const bookNameTa = book ? (book.primary || book.name) : currentBookCode;
+      const bookNameEn = book ? (book.english || book.code) : currentBookCode;
+      const verseStr = targetVerse ? `:${targetVerse}` : '';
+      document.title = `${bookNameTa} ${currentChapter}${verseStr} (${bookNameEn} ${currentChapter}${verseStr}) · தமிழ் வேதாகமம் Tamil Bible | Worship Cloud`;
+    } else {
+      const titleMap = {
+        home: uiLang === 'ta'
+          ? 'Worship Cloud · தமிழ் வேதாகமம் & பாடல்கள் | Tamil Bible & Songs'
+          : 'Worship Cloud · Tamil Bible, Christian Songs Lyrics & Free Church Projector',
+        bible: uiLang === 'ta'
+          ? 'தமிழ் வேதாகமம் (Tamil Bible Online - BSI & KJV) · Worship Cloud'
+          : 'Tamil Bible Online (BSI & KJV Scripture Reader) · Worship Cloud',
+        songs: uiLang === 'ta'
+          ? 'தமிழ் கிறிஸ்தவ பாடல்கள் வரிகள் (18,700+ Songs Lyrics) · Worship Cloud'
+          : 'Tamil Christian Songs Lyrics (18,700+ Catalog) · Worship Cloud',
+        projector: uiLang === 'ta'
+          ? 'இலவச சர்ச் ப்ரொஜெக்டர் (Live Church Projector) · Worship Cloud'
+          : 'Free Church Sanctuary Projector & Presentation · Worship Cloud',
+        daily: uiLang === 'ta'
+          ? 'அன்றாட வசனம் (Daily Bible Verse & Promises) · Worship Cloud'
+          : 'Daily Bible Verse & Promises · Worship Cloud',
+        tools: uiLang === 'ta'
+          ? 'கருவிகள் (Tamil Christian PPTX & PDF Slide Generator) · Worship Cloud'
+          : 'Tools & Slide Generator (Tamil Christian PPTX/PDF) · Worship Cloud'
+      };
 
-    if (titleMap[activeTab]) {
-      document.title = titleMap[activeTab];
+      if (titleMap[activeTab]) {
+        document.title = titleMap[activeTab];
+      }
     }
-  }, [activeTab, uiLang]);
+  }, [activeTab, uiLang, selectedSongForViewer, currentBookCode, currentChapter, targetVerse, booksMeta]);
 
   // Persist current book/chapter
   useEffect(() => {
@@ -272,6 +325,8 @@ export function App() {
     setCurrentBookCode(bookCode);
     setCurrentChapter(chapter);
     setTargetVerse(1);
+    const newUrl = `${window.location.pathname}?book=${encodeURIComponent(bookCode)}&chapter=${chapter}#bible`;
+    history.replaceState(null, '', newUrl);
   };
 
   const handleSelectBibleReference = (bookCode, chapter, verse) => {
@@ -279,6 +334,9 @@ export function App() {
     setCurrentBookCode(bookCode);
     setCurrentChapter(chapter);
     setTargetVerse(verse || 1);
+    const verseParam = verse ? `&verse=${verse}` : '';
+    const newUrl = `${window.location.pathname}?book=${encodeURIComponent(bookCode)}&chapter=${chapter}${verseParam}#bible`;
+    history.replaceState(null, '', newUrl);
   };
 
   const handleSelectPage = (pageNum) => {
@@ -288,11 +346,17 @@ export function App() {
     setCurrentBookCode(targetBook.code);
     setCurrentChapter(1);
     setTargetVerse(1);
+    const newUrl = `${window.location.pathname}?book=${encodeURIComponent(targetBook.code)}&chapter=1#bible`;
+    history.replaceState(null, '', newUrl);
   };
 
   const handleSelectSong = (song) => {
     setActiveTab('songs');
     setSelectedSongForViewer(song);
+    if (song?.id) {
+      const newUrl = `${window.location.pathname}?song=${encodeURIComponent(song.id)}#songs`;
+      history.replaceState(null, '', newUrl);
+    }
   };
 
   return (
@@ -353,6 +417,7 @@ export function App() {
             fontSize={fontSize}
             setFontSize={setFontSize}
             selectedSongInit={selectedSongForViewer}
+            onSelectSong={handleSelectSong}
             uiLang={uiLang}
             theme={theme}
             setTheme={setTheme}

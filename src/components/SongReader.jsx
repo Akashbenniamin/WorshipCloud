@@ -28,6 +28,7 @@ export function SongReader({
   fontSize,
   setFontSize,
   selectedSongInit,
+  onSelectSong,
   uiLang = 'ta',
   userSongs = [],
   onOpenAddSong,
@@ -150,6 +151,14 @@ export function SongReader({
       setSelectedSong(songsIndex[0]);
     }
   }, [selectedSongInit, songsIndex, selectedSong, isMobile]);
+
+  // Notify parent app of selected song to sync URL and SEO document metadata
+  const handleSelectSongInternal = (song) => {
+    setSelectedSong(song);
+    if (onSelectSong) {
+      onSelectSong(song);
+    }
+  };
 
   // Load selected song lyrics
   useEffect(() => {
@@ -362,7 +371,7 @@ export function SongReader({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '10px',
                       background: 'transparent',
                       border: 'none',
                       padding: 0,
@@ -373,19 +382,38 @@ export function SongReader({
                     }}
                     title={isMobile ? (uiLang === 'ta' ? 'பாடலை மாற்ற கிளிக் செய்க' : 'Click to switch song') : undefined}
                   >
-                    <Music size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                    <h1 style={{
-                      fontSize: isMobile ? '1.18rem' : '1.45rem',
-                      fontWeight: 800,
-                      color: 'var(--text-primary)',
-                      lineHeight: 1.25,
-                      margin: 0,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
-                      {selectedSong.t}
-                    </h1>
+                    <Music size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <h1 style={{
+                        fontSize: isMobile ? '1.15rem' : '1.45rem',
+                        fontWeight: 800,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.25,
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {selectedSong.t}
+                      </h1>
+                      {(() => {
+                        const tanglish = selectedSong.ro || selectedSong.englishTitle || (selectedSong.q ? selectedSong.q.split(/\s+/).filter(p => /^[a-z0-9]+$/i.test(p)).join(' ') : '');
+                        if (!tanglish) return null;
+                        return (
+                          <div style={{
+                            fontSize: isMobile ? '0.74rem' : '0.82rem',
+                            color: 'var(--text-tertiary)',
+                            fontWeight: 600,
+                            marginTop: '2px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {tanglish}
+                          </div>
+                        );
+                      })()}
+                    </div>
                     {isMobile && <ChevronDown size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
                   </button>
                 </div>
@@ -797,7 +825,7 @@ export function SongReader({
                   <div
                     key={s.id}
                     onClick={() => {
-                      setSelectedSong(s);
+                      handleSelectSongInternal(s);
                       if (isMobile) setMobileTab('lyrics');
                     }}
                     style={{
@@ -1106,7 +1134,7 @@ export function SongReader({
                     <div
                       key={s.id}
                       onClick={() => {
-                        setSelectedSong(s);
+                        handleSelectSongInternal(s);
                         setMobileTab('lyrics');
                         setIsMobileSongSheetOpen(false);
                       }}
