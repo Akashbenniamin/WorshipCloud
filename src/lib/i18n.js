@@ -156,7 +156,15 @@ export const translations = {
     loginToSaveSong: 'பாடல்களைச் சேமிக்கவும் ஒத்திசைக்கவும் Google மூலம் உள்நுழையவும்',
     closeProjectorWindow: '2வது திரை சாளரத்தை மூடுக',
     fullscreenSlide: 'முழுத்திரை ஸ்லைடு',
-    slideCount: 'ஸ்லைடு'
+    slideCount: 'ஸ்லைடு',
+
+    // Offline & Storage Caching
+    offlineStorage: 'முழுமையான ஆஃப்லைன் பயன்பாடு (Offline Storage)',
+    offlineDesc: 'அனைத்து 18,700+ பாடல்களையும் 66 வேதப் புத்தகங்களையும் பதிவிறக்கம் செய்து இணையம் இல்லாமலேயே பயன்படுத்தலாம்.',
+    offlineReadyBadge: 'ஆஃப்லைனில் தயார் (Offline Ready)',
+    offlineDownloading: 'பதிவிறக்கம் செய்யப்படுகிறது...',
+    downloadAllOffline: 'அனைத்தையும் ஆஃப்லைனில் சேமி (Load Complete Library)',
+    cachedCountLabel: 'சேமிக்கப்பட்ட தரவு கோப்புகள்'
   },
   en: {
     brandName: 'Worship Cloud',
@@ -315,6 +323,14 @@ export const translations = {
     loginToSaveSong: 'Please sign in with Google to save and sync custom songs',
     closeProjectorWindow: 'Close 2nd Screen Window',
     fullscreenSlide: 'Fullscreen Slide',
-    slideCount: 'Slide'
+    slideCount: 'Slide',
+
+    // Offline & Storage Caching
+    offlineStorage: 'Complete Offline Storage',
+    offlineDesc: 'Download all 18,700+ songs and 66 Bible books to use the entire application without internet.',
+    offlineReadyBadge: 'Offline Ready',
+    offlineDownloading: 'Downloading full library...',
+    downloadAllOffline: 'Download All for Offline Use',
+    cachedCountLabel: 'Cached Data Files'
   }
 };

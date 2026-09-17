@@ -16,6 +16,7 @@ import { useProjectorSync } from './hooks/useProjectorSync';
 import { useAuth } from './hooks/useAuth';
 import { getLocalUserSongs, addCustomSong, removeCustomSong, syncUserSongs } from './lib/userSongsStore';
 import { pullCloudSettings, syncSaveSettings } from './lib/userSettingsStore';
+import { startIdleBackgroundPrefetch } from './lib/offlineManager';
 
 export function App() {
   // Check if this window is running as dedicated projector output (for 2nd monitor)
@@ -296,7 +297,11 @@ export function App() {
   useEffect(() => {
     fetch('./data/bible-meta.json')
       .then((r) => r.json())
-      .then((data) => setBooksMeta(data))
+      .then((data) => {
+        setBooksMeta(data);
+        // Start background prefetch during idle moments to make everything seamless
+        startIdleBackgroundPrefetch(data);
+      })
       .catch((err) => console.error('Failed to load bible-meta:', err));
   }, []);
 
@@ -485,6 +490,7 @@ export function App() {
         setFontSize={setFontSize}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
         isAppInstalled={isAppInstalled}
+        booksMeta={booksMeta}
       />
 
       {/* Supabase & Google Auth Modal */}

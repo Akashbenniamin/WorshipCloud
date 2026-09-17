@@ -1,6 +1,12 @@
-import React from 'react';
-import { X, Globe, Palette, Type, Settings, Download } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Globe, Palette, Type, Settings, Download, HardDrive, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { translations } from '../lib/i18n';
+import { 
+  getAllOfflineUrlsWithBible, 
+  downloadAllForOffline, 
+  getCacheStatus, 
+  cancelOfflineDownload 
+} from '../lib/offlineManager';
 
 export function SettingsModal({
   isOpen,
@@ -12,10 +18,47 @@ export function SettingsModal({
   fontSize,
   setFontSize,
   onOpenInstallModal,
-  isAppInstalled
+  isAppInstalled,
+  booksMeta = []
 }) {
   if (!isOpen) return null;
   const t = translations[uiLang] || translations.ta;
+
+  // Offline caching states
+  const offlineUrls = useMemo(() => getAllOfflineUrlsWithBible(booksMeta), [booksMeta]);
+  const [cacheStatus, setCacheStatus] = useState({ cachedCount: 0, totalCount: offlineUrls.length, isComplete: false });
+  const [downloadProgress, setDownloadProgress] = useState(null); // { current, total, percent, isDone, currentItem }
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Check initial cache status on open
+  useEffect(() => {
+    if (isOpen) {
+      getCacheStatus(offlineUrls).then((status) => {
+        setCacheStatus(status);
+      });
+    }
+  }, [isOpen, offlineUrls]);
+
+  const handleStartFullDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setDownloadProgress({ current: 0, total: offlineUrls.length, percent: 0, isDone: false, currentItem: '' });
+
+    try {
+      await downloadAllForOffline(offlineUrls, (progress) => {
+        setDownloadProgress(progress);
+        setCacheStatus({
+          cachedCount: progress.current,
+          totalCount: progress.total,
+          isComplete: progress.isDone
+        });
+      });
+    } catch (err) {
+      console.error('Download offline error:', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const themes = [
     { id: 'parchment', name: uiLang === 'ta' ? 'சுருள் (Parchment)' : 'Parchment (Warm Paper)', color: '#fcfaf6' },
@@ -43,9 +86,12 @@ export function SettingsModal({
         border: '1px solid var(--border-subtle)',
         borderRadius: '12px',
         width: '100%',
-        maxWidth: '480px',
+        maxWidth: '500px',
+        maxHeight: '90vh',
         boxShadow: 'var(--shadow-lg)',
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         animation: 'fadeIn 0.2s ease'
       }} onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
@@ -69,7 +115,7 @@ export function SettingsModal({
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto' }}>
           {/* 1. UI Language */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.6rem' }}>
@@ -164,7 +210,127 @@ export function SettingsModal({
             />
           </div>
 
-          {/* 4. App Installation & PWA */}
+          {/* 4. Complete Offline Storage & Caching */}
+          <div style={{
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <HardDrive size={18} style={{ color: 'var(--accent)', marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {t.offlineStorage}
+                    </label>
+                    {cacheStatus.isComplete && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        color: '#10b981',
+                        fontSize: '0.7rem',
+                        fontWeight: 700
+                      }}>
+                        <CheckCircle2 size={12} />
+                        {t.offlineReadyBadge}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', lineHeight: 1.4 }}>
+                    {t.offlineDesc}
+                  </span>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                    {t.cachedCountLabel}: <strong>{cacheStatus.cachedCount} / {cacheStatus.totalCount}</strong> files (~54 MB)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Bar (when downloading or recently finished) */}
+            {(isDownloading || downloadProgress) && (
+              <div style={{
+                marginTop: '4px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {downloadProgress?.isDone 
+                      ? (uiLang === 'ta' ? 'பதிவிறக்கம் முடிந்தது!' : 'Download Complete!') 
+                      : (t.offlineDownloading)}
+                  </span>
+                  <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                    {downloadProgress?.percent || 0}%
+                  </span>
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: '6px',
+                  backgroundColor: 'var(--border-subtle)',
+                  borderRadius: '3px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${downloadProgress?.percent || 0}%`,
+                    height: '100%',
+                    backgroundColor: downloadProgress?.isDone ? '#10b981' : 'var(--accent)',
+                    transition: 'width 0.15s ease'
+                  }} />
+                </div>
+                {downloadProgress?.currentItem && !downloadProgress.isDone && (
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {downloadProgress.currentItem}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Download Button */}
+            {!cacheStatus.isComplete && (
+              <button
+                onClick={handleStartFullDownload}
+                disabled={isDownloading}
+                style={{
+                  marginTop: '4px',
+                  padding: '9px 14px',
+                  borderRadius: '8px',
+                  backgroundColor: isDownloading ? 'var(--bg-surface)' : 'var(--accent-light)',
+                  color: isDownloading ? 'var(--text-tertiary)' : 'var(--accent)',
+                  border: `1px solid ${isDownloading ? 'var(--border-subtle)' : 'var(--accent)'}`,
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: isDownloading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                    <span>{t.offlineDownloading}</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={15} />
+                    <span>{t.downloadAllOffline}</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* 5. App Installation & PWA */}
           <div style={{
             paddingTop: '0.85rem',
             borderTop: '1px solid var(--border-subtle)',
